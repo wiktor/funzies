@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ANTOS — Warsaw Cyberpunk</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    font-family: 'Press Start 2P', monospace;
+  }
+
+  canvas#bg {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    image-rendering: pixelated;
+  }
+
+  .overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    pointer-events: none;
+  }
+
+  .title {
+    font-size: clamp(48px, 12vw, 160px);
+    font-family: 'Press Start 2P', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    position: relative;
+    color: #fff;
+    text-shadow:
+      0 0 10px #ff4500,
+      0 0 20px #ff4500,
+      0 0 40px #ff6600,
+      0 0 80px #ff3300,
+      0 0 120px #cc2200;
+    animation: flicker 0.15s infinite alternate, float 3s ease-in-out infinite;
+  }
+
+  .subtitle {
+    font-size: clamp(10px, 2vw, 20px);
+    color: #ff00ff;
+    margin-top: 20px;
+    text-shadow: 0 0 10px #ff00ff, 0 0 30px #ff00ff;
+    letter-spacing: 0.5em;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes flicker {
+    0%   { opacity: 1; text-shadow: 0 0 10px #ff4500, 0 0 20px #ff4500, 0 0 40px #ff6600, 0 0 80px #ff3300, 0 0 120px #cc2200; }
+    25%  { opacity: 0.95; text-shadow: 0 0 5px #ff4500, 0 0 15px #ff4500, 0 0 30px #ff6600, 0 0 60px #ff3300; }
+    50%  { opacity: 1; text-shadow: 0 0 15px #ff6600, 0 0 25px #ff4500, 0 0 50px #ff6600, 0 0 100px #ff3300, 0 0 150px #cc2200; }
+    75%  { opacity: 0.97; text-shadow: 0 0 8px #ff4500, 0 0 18px #ff4500, 0 0 35px #ff6600, 0 0 70px #ff3300; }
+    100% { opacity: 1; text-shadow: 0 0 12px #ff4500, 0 0 22px #ff4500, 0 0 45px #ff6600, 0 0 90px #ff3300, 0 0 130px #cc2200; }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+  }
+
+  /* Scanline overlay */
+  .scanlines {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 2;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.15) 2px,
+      rgba(0,0,0,0.15) 4px
+    );
+  }
+
+  /* CRT vignette */
+  .vignette {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 3;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.7) 100%);
+  }
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+
+<div class="overlay">
+  <div class="title" id="title">ANTOS</div>
+  <div class="subtitle">WARSZAWA · 2077</div>
+</div>
+
+<div class="scanlines"></div>
+<div class="vignette"></div>
+
+<script>
+// 8-bit Warsaw cyberpunk cityscape with neon
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+
+const PIXEL = 4; // pixel size for 8-bit feel
+let W, H, cols, rows;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  cols = Math.ceil(W / PIXEL);
+  rows = Math.ceil(H / PIXEL);
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Color palette — cyberpunk neons
+const SKY_TOP = [8, 0, 30];
+const SKY_BOT = [20, 5, 50];
+const NEON_COLORS = [
+  [255, 0, 255],   // magenta
+  [0, 255, 255],   // cyan
+  [255, 60, 0],    // red-orange
+  [255, 0, 100],   // hot pink
+  [0, 200, 255],   // electric blue
+  [180, 0, 255],   // purple
+  [255, 255, 0],   // yellow
+];
+
+// Generate buildings
+const buildings = [];
+function genBuildings() {
+  buildings.length = 0;
+  const bCount = Math.floor(cols / 8) + 5;
+  let x = -10;
+  for (let i = 0; i < bCount; i++) {
+    const w = 6 + Math.floor(Math.random() * 12);
+    const h = 15 + Math.floor(Math.random() * 35);
+    const neon = NEON_COLORS[Math.floor(Math.random() * NEON_COLORS.length)];
+    const hasAntenna = Math.random() > 0.6;
+    const windows = [];
+    for (let wy = 2; wy < h - 1; wy += 3) {
+      for (let wx = 1; wx < w - 1; wx += 2) {
+        windows.push({ wx, wy, on: Math.random() > 0.3, flicker: Math.random() });
+      }
+    }
+    // Neon signs on some buildings
+    const hasSign = Math.random() > 0.5;
+    const signColor = NEON_COLORS[Math.floor(Math.random() * NEON_COLORS.length)];
+
+    buildings.push({ x, w, h, neon, hasAntenna, windows, hasSign, signColor });
+    x += w + 1 + Math.floor(Math.random() * 3);
+  }
+}
+genBuildings();
+
+// Stars
+const stars = [];
+for (let i = 0; i < 120; i++) {
+  stars.push({
+    x: Math.random(),
+    y: Math.random() * 0.5,
+    blink: Math.random() * Math.PI * 2,
+    speed: 0.5 + Math.random() * 2
+  });
+}
+
+// Rain drops
+const rain = [];
+for (let i = 0; i < 80; i++) {
+  rain.push({
+    x: Math.random() * 200,
+    y: Math.random() * 200,
+    speed: 2 + Math.random() * 4,
+    len: 1 + Math.floor(Math.random() * 3)
+  });
+}
+
+// Pałac Kultury silhouette (center landmark)
+function drawPalac(groundY, t) {
+  const cx = Math.floor(cols / 2);
+  const baseW = 14;
+  const baseH = 45;
+  const spireH = 15;
+
+  // Main tower
+  const bx = cx - Math.floor(baseW / 2);
+  const by = groundY - baseH;
+
+  // Draw base
+  for (let py = by; py < groundY; py++) {
+    // Taper slightly at top
+    const taper = py < by + 10 ? Math.floor((by + 10 - py) / 3) : 0;
+    for (let px = bx + taper; px < bx + baseW - taper; px++) {
+      setPixel(px, py, [15, 10, 35]);
+    }
+  }
+
+  // Spire
+  for (let s = 0; s < spireH; s++) {
+    const sw = Math.max(1, Math.floor((spireH - s) / 4));
+    for (let sx = -sw; sx <= sw; sx++) {
+      setPixel(cx + sx, by - s, [20, 12, 40]);
+    }
+  }
+
+  // Red blinking light on top
+  if (Math.sin(t * 3) > 0) {
+    setPixel(cx, by - spireH, [255, 0, 0]);
+    setPixel(cx, by - spireH - 1, [255, 50, 50]);
+  }
+
+  // Windows
+  for (let wy = by + 3; wy < groundY - 2; wy += 3) {
+    for (let wx = bx + 2; wx < bx + baseW - 2; wx += 2) {
+      if (Math.sin(t * 2 + wx * wy) > -0.3) {
+        setPixel(wx, wy, [255, 220, 100]);
+      }
+    }
+  }
+
+  // Neon ring around top
+  const ringY = by + 2;
+  for (let rx = bx + 1; rx < bx + baseW - 1; rx++) {
+    const glow = Math.sin(t * 4 + rx) > 0 ? 255 : 150;
+    setPixel(rx, ringY, [glow, 0, glow]);
+  }
+}
+
+function setPixel(px, py, color) {
+  if (px < 0 || px >= cols || py < 0 || py >= rows) return;
+  ctx.fillStyle = `rgb(${color[0]},${color[1]},${color[2]})`;
+  ctx.fillRect(px * PIXEL, py * PIXEL, PIXEL, PIXEL);
+}
+
+function lerp(a, b, t) {
+  return a.map((v, i) => Math.floor(v + (b[i] - v) * t));
+}
+
+let frame = 0;
+
+function draw() {
+  frame++;
+  const t = frame * 0.02;
+  ctx.clearRect(0, 0, W, H);
+
+  const groundY = rows - 8;
+
+  // Sky gradient
+  for (let y = 0; y < groundY; y++) {
+    const frac = y / groundY;
+    const col = lerp(SKY_TOP, SKY_BOT, frac);
+    for (let x = 0; x < cols; x++) {
+      setPixel(x, y, col);
+    }
+  }
+
+  // Stars
+  for (const s of stars) {
+    const sx = Math.floor(s.x * cols);
+    const sy = Math.floor(s.y * rows);
+    const brightness = Math.sin(t * s.speed + s.blink) * 0.5 + 0.5;
+    const v = Math.floor(150 + brightness * 105);
+    setPixel(sx, sy, [v, v, v]);
+  }
+
+  // Buildings
+  for (const b of buildings) {
+    const by = groundY - b.h;
+    // Building body
+    for (let py = by; py < groundY; py++) {
+      for (let px = b.x; px < b.x + b.w; px++) {
+        setPixel(px, py, [18, 12, 30]);
+      }
+    }
+    // Edges
+    for (let py = by; py < groundY; py++) {
+      setPixel(b.x, py, [30, 20, 50]);
+      setPixel(b.x + b.w - 1, py, [12, 8, 20]);
+    }
+    // Rooftop
+    for (let px = b.x; px < b.x + b.w; px++) {
+      setPixel(px, by, [35, 25, 55]);
+    }
+    // Antenna
+    if (b.hasAntenna) {
+      const ax = b.x + Math.floor(b.w / 2);
+      for (let a = 1; a <= 5; a++) setPixel(ax, by - a, [40, 30, 60]);
+      if (Math.sin(t * 2.5 + b.x) > 0.3) setPixel(ax, by - 5, [255, 0, 0]);
+    }
+    // Windows
+    for (const w of b.windows) {
+      const wx = b.x + w.wx;
+      const wy = groundY - b.h + w.wy;
+      if (w.on && Math.sin(t + w.flicker * 10) > -0.8) {
+        const warm = Math.random() > 0.3 ? [255, 220, 100] : [100, 200, 255];
+        setPixel(wx, wy, warm);
+      }
+    }
+    // Neon sign on building face
+    if (b.hasSign) {
+      const sy = by + Math.floor(b.h * 0.3);
+      const glow = Math.sin(t * 3 + b.x) > -0.2 ? 1 : 0.3;
+      for (let sx = b.x + 1; sx < b.x + b.w - 1; sx++) {
+        setPixel(sx, sy, b.signColor.map(c => Math.floor(c * glow)));
+        setPixel(sx, sy + 1, b.signColor.map(c => Math.floor(c * glow * 0.5)));
+      }
+    }
+    // Neon edge glow
+    const glowIntensity = Math.sin(t * 2 + b.x) * 0.3 + 0.7;
+    for (let py = by; py < Math.min(by + 8, groundY); py++) {
+      setPixel(b.x - 1, py, b.neon.map(c => Math.floor(c * glowIntensity * 0.3)));
+      setPixel(b.x + b.w, py, b.neon.map(c => Math.floor(c * glowIntensity * 0.3)));
+    }
+  }
+
+  // Pałac Kultury i Nauki
+  drawPalac(groundY, t);
+
+  // Ground / street
+  for (let y = groundY; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const wet = Math.sin(x * 0.5 + t) * 0.1 + 0.1;
+      setPixel(x, y, [20 + wet * 50, 15 + wet * 30, 35 + wet * 40]);
+    }
+  }
+
+  // Street neon reflections
+  for (let y = groundY; y < rows; y++) {
+    for (let x = 0; x < cols; x += 3) {
+      const ri = Math.floor(Math.sin(x * 0.3 + t * 2) * 3 + 3) % NEON_COLORS.length;
+      const ref = NEON_COLORS[ri];
+      const fade = 0.15 * (1 - (y - groundY) / (rows - groundY));
+      if (Math.random() > 0.7) {
+        setPixel(x, y, ref.map(c => Math.floor(c * fade)));
+      }
+    }
+  }
+
+  // Rain
+  for (const r of rain) {
+    r.y += r.speed;
+    if (r.y > rows) { r.y = -r.len; r.x = Math.random() * cols; }
+    for (let l = 0; l < r.len; l++) {
+      setPixel(Math.floor(r.x), Math.floor(r.y - l), [80, 80, 150]);
+    }
+    r.x += 0.3; // slight wind
+  }
+
+  // Fire particles from title area
+  const titleY = Math.floor(rows * 0.42);
+  const titleX = Math.floor(cols * 0.3);
+  const titleW = Math.floor(cols * 0.4);
+  for (let i = 0; i < 15; i++) {
+    const fx = titleX + Math.floor(Math.random() * titleW);
+    const fy = titleY - Math.floor(Math.random() * 12);
+    const life = Math.random();
+    if (life > 0.6) setPixel(fx, fy, [255, Math.floor(100 + Math.random() * 100), 0]);
+    else if (life > 0.3) setPixel(fx, fy, [255, Math.floor(Math.random() * 60), 0]);
+    else setPixel(fx, fy, [200, 0, 0]);
+  }
+
+  // Floating embers
+  for (let i = 0; i < 8; i++) {
+    const ex = Math.floor(cols * 0.3 + Math.sin(t + i * 2) * cols * 0.25);
+    const ey = Math.floor(titleY - 10 - Math.sin(t * 1.5 + i) * 8 - i * 2);
+    setPixel(ex, ey, [255, 150, 0]);
+  }
+
+  requestAnimationFrame(draw);
+}
+
+draw();
+
+// Regenerate buildings on resize
+window.addEventListener('resize', () => { resize(); genBuildings(); });
+</script>
+</body>
+</html>
