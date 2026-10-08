@@ -93,10 +93,68 @@
     96% { opacity: 0.3; }
     97% { opacity: 0.7; }
   }
+
+  /* Retro Arcade Navigation */
+  .arcade-nav {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(8, 4, 20, 0.9);
+    border: 2px solid #00e5ff;
+    box-shadow: 0 0 16px rgba(0, 229, 255, 0.45), inset 0 0 10px rgba(0, 229, 255, 0.2);
+    padding: 6px 14px;
+    border-radius: 4px;
+    pointer-events: auto;
+  }
+
+  .arcade-nav a {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(8px, 1.1vw, 11px);
+    color: #8899aa;
+    text-decoration: none;
+    padding: 6px 10px;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    letter-spacing: 0.1em;
+    display: inline-block;
+  }
+
+  .arcade-nav a:hover {
+    color: #ffffff;
+    border-color: #ff007f;
+    text-shadow: 0 0 8px #ff007f;
+    background: rgba(255, 0, 127, 0.2);
+  }
+
+  .arcade-nav a.active {
+    color: #ffe600;
+    border-color: #ffe600;
+    text-shadow: 0 0 10px #ffe600, 0 0 20px #ff6600;
+    background: rgba(255, 230, 0, 0.15);
+    box-shadow: 0 0 8px rgba(255, 230, 0, 0.3);
+  }
+
+  @media (max-width: 640px) {
+    .arcade-nav { gap: 4px; padding: 4px 8px; }
+    .arcade-nav a { padding: 4px 6px; font-size: 8px; }
+  }
 </style>
 </head>
 <body>
 <canvas id="city"></canvas>
+
+<!-- ARCADE NAVIGATION -->
+<nav class="arcade-nav">
+  <a href="index.html" class="active">★ MAREK</a>
+  <a href="antos.html">ANTOS</a>
+  <a href="lol.html">LOL</a>
+</nav>
+
 <div class="overlay">
   <div class="title">MAREK</div>
   <div class="subtitle">★ WARSZAWA ★</div>

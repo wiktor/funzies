@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LOL — LEAGUE OF LAUGHS · WARSZAWA 2077</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #04010a;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    font-family: 'Press Start 2P', monospace;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: crosshair;
+  }
+
+  canvas#stage {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+  }
+
+  /* Retro Arcade Navigation */
+  .arcade-nav {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(8, 4, 20, 0.9);
+    border: 2px solid #00e5ff;
+    box-shadow: 0 0 16px rgba(0, 229, 255, 0.45), inset 0 0 10px rgba(0, 229, 255, 0.2);
+    padding: 6px 14px;
+    border-radius: 4px;
+    pointer-events: auto;
+  }
+
+  .arcade-nav a {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(8px, 1.1vw, 11px);
+    color: #8899aa;
+    text-decoration: none;
+    padding: 6px 10px;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    letter-spacing: 0.1em;
+    display: inline-block;
+  }
+
+  .arcade-nav a:hover {
+    color: #ffffff;
+    border-color: #ff007f;
+    text-shadow: 0 0 8px #ff007f;
+    background: rgba(255, 0, 127, 0.2);
+  }
+
+  .arcade-nav a.active {
+    color: #ffe600;
+    border-color: #ffe600;
+    text-shadow: 0 0 10px #ffe600, 0 0 20px #ff6600;
+    background: rgba(255, 230, 0, 0.15);
+    box-shadow: 0 0 8px rgba(255, 230, 0, 0.3);
+  }
+
+  /* Top Right Status & Audio */
+  .hud-top-right {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    pointer-events: auto;
+  }
+
+  .hud-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(7px, 1vw, 10px);
+    background: rgba(8, 4, 20, 0.9);
+    color: #39ff14;
+    border: 2px solid #39ff14;
+    box-shadow: 0 0 10px rgba(57, 255, 20, 0.4);
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+
+  .hud-btn:hover {
+    background: #39ff14;
+    color: #000;
+    box-shadow: 0 0 18px rgba(57, 255, 20, 0.8);
+  }
+
+  .hud-stat {
+    font-size: clamp(7px, 1vw, 10px);
+    color: #ffe600;
+    text-shadow: 0 0 8px #ffe600;
+    background: rgba(8, 4, 20, 0.9);
+    border: 2px solid #ffe600;
+    box-shadow: 0 0 10px rgba(255, 230, 0, 0.3);
+    padding: 6px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  /* Central Hero Overlay */
+  .overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    text-align: center;
+    padding: 20px;
+  }
+
+  .title {
+    font-size: clamp(5.2rem, 19vw, 15rem);
+    color: #39ff14;
+    text-shadow:
+      0 0 10px #39ff14,
+      0 0 30px #39ff14,
+      0 0 70px #39ff14,
+      4px 4px 0 #ff003c,
+      -3px -3px 0 #00e5ff,
+      -5px 3px 0 #b000ff;
+    animation: glitch 2.6s infinite, pulse 2s ease-in-out infinite, floatTitle 4s ease-in-out infinite;
+    letter-spacing: 0.16em;
+    margin-bottom: 0.2rem;
+  }
+
+  .subtitle {
+    font-size: clamp(0.65rem, 2.2vw, 1.55rem);
+    color: #00e5ff;
+    text-shadow: 0 0 10px #00e5ff, 0 0 25px #00e5ff, 0 0 45px #00e5ff;
+    letter-spacing: 0.45em;
+    animation: flicker 3s infinite;
+    margin-top: 0.6rem;
+  }
+
+  .subtitle2 {
+    font-size: clamp(0.45rem, 1.2vw, 0.82rem);
+    color: #ffe600;
+    text-shadow: 0 0 8px #ffe600, 0 0 20px #ff3b00;
+    letter-spacing: 0.4em;
+    margin-top: 0.9rem;
+    animation: flicker 4s infinite reverse;
+    opacity: 0.92;
+  }
+
+  .badge {
+    margin-top: 1.8rem;
+    font-size: clamp(0.42rem, 1vw, 0.72rem);
+    color: #39ff14;
+    text-shadow: 0 0 8px #39ff14;
+    letter-spacing: 0.22em;
+    border: 1px dashed rgba(57, 255, 20, 0.65);
+    padding: 7px 16px;
+    border-radius: 4px;
+    background: rgba(8, 4, 20, 0.65);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+
+  /* Bottom Retro HUD Bar */
+  .hud-bottom {
+    position: fixed;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: clamp(6px, 0.85vw, 9px);
+    color: #00e5ff;
+    text-shadow: 0 0 8px #00e5ff;
+    background: rgba(8, 4, 20, 0.9);
+    border: 1px solid rgba(0, 229, 255, 0.4);
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
+    padding: 6px 14px;
+    border-radius: 4px;
+    pointer-events: none;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+
+  .hud-sep {
+    color: #ff003c;
+  }
+
+  /* Scanlines CRT Overlay */
+  .scanlines {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 2;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 2px,
+      rgba(0, 0, 0, 0.16) 2px,
+      rgba(0, 0, 0, 0.16) 4px
+    );
+  }
+
+  /* Vignette CRT Overlay */
+  .vignette {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 2;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.78) 100%);
+  }
+
+  /* Keyframe Animations */
+  @keyframes glitch {
+    0%, 86%, 100% { transform: translate(0); filter: none; }
+    87% { transform: translate(-6px, 3px); filter: hue-rotate(75deg); }
+    88% { transform: translate(6px, -3px); filter: hue-rotate(-75deg); }
+    89% { transform: translate(-4px, -1px) skewX(4deg); }
+    90% { transform: translate(4px, 1px) skewX(-3deg); }
+    91% { transform: translate(0); filter: none; }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.75; }
+  }
+
+  @keyframes floatTitle {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes flicker {
+    0%, 92%, 100% { opacity: 1; }
+    93% { opacity: 0.22; }
+    94% { opacity: 0.95; }
+    95% { opacity: 0.3; }
+    96% { opacity: 0.85; }
+  }
+
+  @media (max-width: 640px) {
+    .arcade-nav { gap: 4px; padding: 4px 8px; }
+    .arcade-nav a { padding: 4px 6px; font-size: 8px; }
+    .hud-bottom { display: none; }
+  }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+
+<!-- ARCADE NAVIGATION -->
+<nav class="arcade-nav">
+  <a href="index.html">MAREK</a>
+  <a href="antos.html">ANTOS</a>
+  <a href="lol.html" class="active">★ LOL</a>
+</nav>
+
+<!-- TOP-RIGHT AUDIO & LP COUNTER -->
+<div class="hud-top-right">
+  <button id="sfx-toggle" class="hud-btn" title="Toggle 8-bit Audio">🔊 SFX: ON</button>
+  <div class="hud-stat">LP: +<span id="counter">0000</span></div>
+</div>
+
+<!-- CENTRAL OVERLAY -->
+<div class="overlay">
+  <div class="title" id="main-title">LOL</div>
+  <div class="subtitle">★ LEAGUE OF LAUGHS · WARSZAWA 2077 ★</div>
+  <div class="subtitle2">PRESS ANY KEY // CLICK FOR CHAOS</div>
+  <div class="badge">CLICK FOR LP BURST • SPACE FOR NEXUS BLAST</div>
+</div>
+
+<!-- BOTTOM STATUS -->
+<div class="hud-bottom">
+  <span>[CLICK/TAP] LP BURST</span>
+  <span class="hud-sep">•</span>
+  <span>[SPACE] NEXUS EXPLOSION</span>
+  <span class="hud-sep">•</span>
+  <span>[KEYS A-Z] 8-BIT SYNTH</span>
+  <span class="hud-sep">•</span>
+  <span>[M] SFX</span>
+</div>
+
+<!-- CRT SCREEN OVERLAYS -->
+<div class="scanlines"></div>
+<div class="vignette"></div>
+
+<script>
+// ==========================================
+// 1. CANVAS SETUP & HEXTECH PALETTE
+// ==========================================
+const canvas = document.getElementById('stage');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+// Palette: Acid green, Neon yellow, Void violet, Arcane cyan, Tilt red
+const NEONS = [
+  '#39ff14', // Acid Green
+  '#ffe600', // Neon Yellow
+  '#b000ff', // Void Violet
+  '#00e5ff', // Arcane Cyan
+  '#ff003c'  // Tilt Red
+];
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  initStars();
+  initSkyline();
+  initWater();
+}
+
+// ==========================================
+// 2. RETRO 8-BIT WEB AUDIO API SYNTHESIZER
+// ==========================================
+let audioCtx = null;
+let sfxEnabled = true;
+
+function initAudio() {
+  if (!audioCtx) {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (AudioContextClass) {
+      audioCtx = new AudioContextClass();
+    }
+  }
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
+
+// Toggle audio via HUD button or 'M' key
+const sfxBtn = document.getElementById('sfx-toggle');
+sfxBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  initAudio();
+  sfxEnabled = !sfxEnabled;
+  sfxBtn.textContent = sfxEnabled ? '🔊 SFX: ON' : '🔇 SFX: OFF';
+  sfxBtn.style.color = sfxEnabled ? '#39ff14' : '#ff003c';
+  sfxBtn.style.borderColor = sfxEnabled ? '#39ff14' : '#ff003c';
+  if (sfxEnabled) playCoin();
+});
+
+// Sound Generator: Laugh arpeggio ("Ha-ha-ha-ha-LOL!")
+function playLaugh() {
+  if (!sfxEnabled || !audioCtx) return;
+  const now = audioCtx.currentTime;
+  const notes = [587.33, 739.99, 880.00, 1174.66, 880.00, 1174.66]; // D5, F#5, A5, D6
+  notes.forEach((freq, idx) => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = idx % 2 === 0 ? 'square' : 'sawtooth';
+    osc.frequency.setValueAtTime(freq, now + idx * 0.065);
+    osc.frequency.exponentialRampToValueAtTime(freq * 1.1, now + idx * 0.065 + 0.055);
+
+    gain.gain.setValueAtTime(0.08, now + idx * 0.065);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.065 + 0.06);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start(now + idx * 0.065);
+    osc.stop(now + idx * 0.065 + 0.065);
+  });
+}
+
+// Sound Generator: Retro Skillshot / Laser Pew
+function playLaser() {
+  if (!sfxEnabled || !audioCtx) return;
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(1500, now);
+  osc.frequency.exponentialRampToValueAtTime(140, now + 0.15);
+
+  gain.gain.setValueAtTime(0.09, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start(now);
+  osc.stop(now + 0.16);
+}
+
+// Sound Generator: Arcade LP / Gold Coin Chime
+function playCoin() {
+  if (!sfxEnabled || !audioCtx) return;
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.type = 'square';
+  osc.frequency.setValueAtTime(987.77, now); // B5
+  osc.frequency.setValueAtTime(1318.51, now + 0.07); // E6
+
+  gain.gain.setValueAtTime(0.07, now);
+  gain.gain.setValueAtTime(0.07, now + 0.07);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start(now);
+  osc.stop(now + 0.31);
+}
+
+// Sound Generator: Nexus / Pentakill EMP Bass Blast
+function playBassBlast() {
+  if (!sfxEnabled || !audioCtx) return;
+  const now = audioCtx.currentTime;
+
+  // Sub bass pitch slide
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(240, now);
+  osc.frequency.exponentialRampToValueAtTime(28, now + 0.5);
+
+  gain.gain.setValueAtTime(0.28, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.52);
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(now);
+  osc.stop(now + 0.54);
+
+  // Noise explosion layer
+  const bufferSize = audioCtx.sampleRate * 0.35;
+  const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const output = noiseBuffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    output[i] = Math.random() * 2 - 1;
+  }
+  const whiteNoise = audioCtx.createBufferSource();
+  whiteNoise.buffer = noiseBuffer;
+
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(900, now);
+  filter.frequency.exponentialRampToValueAtTime(50, now + 0.35);
+
+  const noiseGain = audioCtx.createGain();
+  noiseGain.gain.setValueAtTime(0.14, now);
+  noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+  whiteNoise.connect(filter);
+  filter.connect(noiseGain);
+  noiseGain.connect(audioCtx.destination);
+
+  whiteNoise.start(now);
+  whiteNoise.stop(now + 0.36);
+}
+
+// Sound Generator: Keyboard Chip Note
+function playChipNote(freq) {
+  if (!sfxEnabled || !audioCtx) return;
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.type = 'square';
+  osc.frequency.setValueAtTime(freq, now);
+
+  gain.gain.setValueAtTime(0.07, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start(now);
+  osc.stop(now + 0.2);
+}
+
+// ==========================================
+// 3. BACKGROUND HEXTECH SKYLINE & WISŁA
+// ==========================================
+let stars = [];
+function initStars() {
+  stars = Array.from({ length: 160 }, () => ({
+    x: Math.random() * W,
+    y: Math.random() * (H * 0.55),
+    size: 1 + Math.random() * 2.2,
+    blinkOffset: Math.random() * Math.PI * 2,
+    blinkSpeed: 1 + Math.random() * 3
+  }));
+}
+
+// Shooting Stars / Hextech Comet
+let shootingStars = [];
+function spawnShootingStar() {
+  if (shootingStars.length < 3 && Math.random() > 0.985) {
+    shootingStars.push({
+      x: Math.random() * W,
+      y: Math.random() * (H * 0.35),
+      dx: 4 + Math.random() * 6,
+      dy: 2 + Math.random() * 3,
+      len: 30 + Math.random() * 45,
+      color: NEONS[Math.floor(Math.random() * NEONS.length)],
+      life: 1.0
+    });
+  }
+}
+
+// Warsaw Skyline: Hextech Towers & PKiN Nexus Spire
+let buildings = [];
+let pkinIndex = -1;
+
+function initSkyline() {
+  buildings = [];
+  let cx = 0;
+  let bIdx = 0;
+
+  while (cx < W + 120) {
+    const bw = 35 + Math.floor(Math.random() * 65);
+    const bh = 90 + Math.random() * (H * 0.52);
+    const color = `hsl(${245 + Math.random() * 35}, 40%, ${6 + Math.random() * 8}%)`;
+
+    // Windows
+    const windows = [];
+    const cols = Math.floor(bw / 12);
+    const rows = Math.floor(bh / 14);
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (Math.random() > 0.38) {
+          windows.push({
+            x: 5 + c * 12,
+            y: 8 + r * 14,
+            lit: Math.random() > 0.22,
+            color: Math.random() > 0.65 ? NEONS[Math.floor(Math.random() * NEONS.length)] : '#ffea9f'
+          });
+        }
+      }
+    }
+
+    // Place Pałac Kultury i Nauki (PKiN Nexus Spire) near center
+    const isPKiN = (cx > W * 0.42 && cx < W * 0.58 && pkinIndex === -1);
+    if (isPKiN) pkinIndex = bIdx;
+
+    buildings.push({
+      x: cx,
+      w: bw,
+      h: isPKiN ? Math.max(bh, H * 0.55) : bh,
+      color,
+      windows,
+      isPKiN,
+      hasSpire: Math.random() > 0.75,
+      hasAntenna: Math.random() > 0.6,
+      accent: Math.random() > 0.35 ? NEONS[Math.floor(Math.random() * NEONS.length)] : null,
+      signText: Math.random() > 0.7 ? ['NEXUS', 'MID', 'BARON', '2077', 'LOL'][Math.floor(Math.random() * 5)] : null,
+      signColor: NEONS[Math.floor(Math.random() * NEONS.length)]
+    });
+
+    cx += bw + 4 + Math.floor(Math.random() * 12);
+    bIdx++;
+  }
+}
+
+// Floating Bobbing Signs from Theme Blueprint:
+// 'SURRENDER@20', 'MID LUB FEED', 'LAGOWAŁO MI', 'BARON WISŁA', 'PKIN NEXUS', 'XD XD XD', 'REPORT JG', 'NO VISION', 'FF 15'
+const memeSigns = [
+  'SURRENDER@20', 'MID LUB FEED', 'LAGOWAŁO MI',
+  'BARON WISŁA', 'PKIN NEXUS', 'XD XD XD',
+  'REPORT JG', 'NO VISION', 'FF 15'
+];
+
+let floatingHolograms = [];
+function initHolograms() {
+  floatingHolograms = memeSigns.map((text, i) => ({
+    text,
+    x: 30 + (i * (W / memeSigns.length)) % (W - 140),
+    baseY: 65 + (i * 44) % (H * 0.44),
+    color: NEONS[i % NEONS.length],
+    speed: 0.8 + Math.random() * 1.4,
+    phase: Math.random() * Math.PI * 2
+  }));
+}
+initHolograms();
+
+// Wisła River
+let waterY = 0;
+function initWater() {
+  waterY = H * 0.74;
+}
+
+// Hovering Warsaw Cyber-Tram 2077
+let tram = {
+  x: -160,
+  y: 0,
+  w: 110,
+  h: 24,
+  speed: 2.2
+};
+
+// Cyber Rain
+let rainDrops = [];
+for (let i = 0; i < 180; i++) {
+  rainDrops.push({
+    x: Math.random() * 2500,
+    y: Math.random() * 1200,
+    speed: 7 + Math.random() * 9,
+    len: 12 + Math.random() * 22,
+    color: Math.random() > 0.5 ? 'rgba(0, 229, 255, 0.22)' : 'rgba(57, 255, 20, 0.18)'
+  });
+}
+
+// ==========================================
+// 4. INTERACTIVE PARTICLES & LP BURSTS
+// ==========================================
+let particles = [];
+let textParticles = [];
+let shockwaves = [];
+let lpScore = 0;
+let screenShake = 0;
+let lightningFlash = 0;
+
+const counterElem = document.getElementById('counter');
+
+function updateCounter(amount = 100) {
+  lpScore += amount;
+  counterElem.textContent = String(lpScore).padStart(4, '0');
+  counterElem.style.color = '#39ff14';
+  setTimeout(() => { counterElem.style.color = '#ffe600'; }, 180);
+}
+
+// LP Bursts (+100 LP, KEKW, EZ, DIFF, PENTAKILL, etc.)
+function createBurst(x, y, count = 40, isMega = false) {
+  initAudio();
+
+  screenShake = Math.max(screenShake, isMega ? 15 : 6);
+
+  // Shockwave ring
+  shockwaves.push({
+    x, y,
+    radius: 4,
+    maxRadius: isMega ? Math.max(W, H) * 0.75 : 140,
+    color: isMega ? '#ffe600' : NEONS[Math.floor(Math.random() * NEONS.length)],
+    alpha: 1.0,
+    lineWidth: isMega ? 8 : 4
+  });
+
+  // Floating text particle
+  const words = isMega
+    ? ['★ PENTAKILL! ★', '★ NEXUS DESTROYED ★', '★ VICTORY ★', '★ +500 LP ★']
+    : ['+100 LP', 'KEKW', 'EZ', 'DIFF', 'GANK!', 'FIRST BLOOD', 'XD', 'ACE!'];
+  const word = words[Math.floor(Math.random() * words.length)];
+
+  textParticles.push({
+    text: word,
+    x, y: y - 10,
+    vx: (Math.random() - 0.5) * 2,
+    vy: -2 - Math.random() * 3,
+    color: isMega ? '#ffe600' : NEONS[Math.floor(Math.random() * NEONS.length)],
+    alpha: 1.0,
+    scale: isMega ? 1.8 : 1.1,
+    rot: (Math.random() - 0.5) * 0.4
+  });
+
+  // Pixel particles / confetti
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = (isMega ? 4 : 2) + Math.random() * (isMega ? 14 : 8);
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - (isMega ? 3 : 1),
+      size: 3 + Math.floor(Math.random() * 5),
+      color: NEONS[Math.floor(Math.random() * NEONS.length)],
+      alpha: 1.0,
+      gravity: 0.18,
+      drag: 0.97,
+      life: 1.0,
+      decay: 0.012 + Math.random() * 0.02
+    });
+  }
+
+  // Audio trigger
+  if (isMega) {
+    playBassBlast();
+  } else {
+    const rnd = Math.random();
+    if (rnd < 0.4) playLaugh();
+    else if (rnd < 0.7) playLaser();
+    else playCoin();
+  }
+}
+
+// Mouse trailing particles
+let pointerTrail = [];
+window.addEventListener('pointermove', (e) => {
+  if (Math.random() > 0.3) {
+    pointerTrail.push({
+      x: e.clientX,
+      y: e.clientY,
+      size: 2 + Math.random() * 3,
+      color: Math.random() > 0.5 ? '#39ff14' : '#00e5ff',
+      alpha: 0.8
+    });
+    if (pointerTrail.length > 25) pointerTrail.shift();
+  }
+});
+
+// Pointer click trigger
+window.addEventListener('pointerdown', (e) => {
+  if (e.target.closest('.arcade-nav') || e.target.closest('.hud-top-right')) return;
+  createBurst(e.clientX, e.clientY, 35, false);
+  updateCounter(100);
+});
+
+// Keyboard controls & soundboard
+const keyScale = {
+  'q': 261.63, 'w': 293.66, 'e': 329.63, 'r': 349.23, 't': 392.00, 'y': 440.00, 'u': 493.88,
+  'a': 523.25, 's': 587.33, 'd': 659.25, 'f': 698.46, 'g': 783.99, 'h': 880.00, 'j': 987.77,
+  'z': 1046.50, 'x': 1174.66, 'c': 1318.51, 'v': 1396.91, 'b': 1567.98, 'n': 1760.00, 'm': 1975.53
+};
+
+window.addEventListener('keydown', (e) => {
+  initAudio();
+  const k = e.key.toLowerCase();
+
+  // Spacebar = Nexus Blast / EMP Explosion
+  if (e.code === 'Space') {
+    e.preventDefault();
+    createBurst(W * 0.5, H * 0.48, 120, true);
+    updateCounter(500);
+    lightningFlash = 12;
+    return;
+  }
+
+  // 'M' = Audio mute/unmute
+  if (k === 'm') {
+    sfxBtn.click();
+    return;
+  }
+
+  // 'L' = Instant laugh burst
+  if (k === 'l') {
+    playLaugh();
+    createBurst(Math.random() * W, H * 0.3 + Math.random() * (H * 0.4), 45, false);
+    updateCounter(150);
+    return;
+  }
+
+  // Letter keys: 8-bit soundboard note + spawn floating letter
+  if (keyScale[k]) {
+    playChipNote(keyScale[k]);
+    updateCounter(50);
+    textParticles.push({
+      text: e.key.toUpperCase(),
+      x: W * 0.2 + Math.random() * (W * 0.6),
+      y: H * 0.5 + Math.random() * 80,
+      vx: (Math.random() - 0.5) * 3,
+      vy: -3 - Math.random() * 3,
+      color: NEONS[Math.floor(Math.random() * NEONS.length)],
+      alpha: 1.0,
+      scale: 1.4,
+      rot: (Math.random() - 0.5) * 0.5
+    });
+  }
+});
+
+// ==========================================
+// 5. ANIMATION & RENDER LOOP
+// ==========================================
+let t = 0;
+
+function draw() {
+  t += 0.016;
+
+  // Handle screen shake
+  ctx.save();
+  if (screenShake > 0) {
+    const ox = (Math.random() - 0.5) * screenShake;
+    const oy = (Math.random() - 0.5) * screenShake;
+    ctx.translate(ox, oy);
+    screenShake *= 0.9;
+    if (screenShake < 0.3) screenShake = 0;
+  }
+
+  // Hextech Night Sky Gradient
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+  skyGrad.addColorStop(0, '#020010');
+  skyGrad.addColorStop(0.35, '#0e0024');
+  skyGrad.addColorStop(0.65, '#1d003a');
+  skyGrad.addColorStop(0.85, '#110020');
+  skyGrad.addColorStop(1, '#06000c');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Stars
+  for (const star of stars) {
+    const alpha = 0.3 + 0.7 * Math.abs(Math.sin(t * star.blinkSpeed + star.blinkOffset));
+    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+    ctx.fillRect(Math.floor(star.x), Math.floor(star.y), star.size, star.size);
+  }
+
+  // Shooting Stars
+  spawnShootingStar();
+  for (let i = shootingStars.length - 1; i >= 0; i--) {
+    const s = shootingStars[i];
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.y);
+    ctx.lineTo(s.x - s.dx * (s.len / 10), s.y - s.dy * (s.len / 10));
+    ctx.stroke();
+
+    s.x += s.dx;
+    s.y += s.dy;
+    s.life -= 0.025;
+    if (s.life <= 0 || s.x > W || s.y > H) shootingStars.splice(i, 1);
+  }
+
+  // Arcane Moon
+  const moonX = W * 0.82;
+  const moonY = H * 0.12;
+  ctx.save();
+  ctx.fillStyle = '#00e5ff';
+  ctx.shadowColor = '#00e5ff';
+  ctx.shadowBlur = 35;
+  ctx.beginPath();
+  ctx.arc(moonX, moonY, 26, 0, Math.PI * 2);
+  ctx.fill();
+  // Moon glowing hextech ring
+  ctx.strokeStyle = '#ffe600';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(moonX, moonY, 34, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // Floating Meme Signs ('SURRENDER@20', 'MID LUB FEED', etc.)
+  ctx.font = '9px "Press Start 2P"';
+  for (const holo of floatingHolograms) {
+    const y = holo.baseY + Math.sin(t * holo.speed + holo.phase) * 8;
+    ctx.fillStyle = holo.color;
+    ctx.shadowColor = holo.color;
+    ctx.shadowBlur = 12;
+    ctx.fillText(holo.text, holo.x, y);
+    ctx.shadowBlur = 0;
+  }
+
+  // Skyline Buildings & PKiN Nexus Spire
+  waterY = H * 0.74;
+
+  for (let i = 0; i < buildings.length; i++) {
+    const b = buildings[i];
+    const by = waterY - b.h;
+
+    // Building body
+    ctx.fillStyle = b.color;
+    ctx.fillRect(b.x, by, b.w, b.h);
+
+    // PKiN Nexus Spire
+    if (b.isPKiN) {
+      // Tiered tower levels
+      const tiers = 3;
+      for (let ti = 0; ti < tiers; ti++) {
+        const tw = b.w * (0.75 - ti * 0.2);
+        const th = 22 + ti * 12;
+        ctx.fillRect(b.x + (b.w - tw) / 2, by - (ti + 1) * th, tw, th);
+      }
+
+      // Tall Spire & Apex Beacon
+      const antX = b.x + b.w / 2;
+      const antTop = by - tiers * 32 - 45;
+      ctx.fillStyle = '#666';
+      ctx.fillRect(antX - 1, antTop, 3, 50);
+
+      // Blinking Apex Beacon
+      const beaconLit = (Math.sin(t * 4) > 0);
+      ctx.fillStyle = beaconLit ? '#ff003c' : '#440010';
+      ctx.shadowColor = '#ff003c';
+      ctx.shadowBlur = beaconLit ? 16 : 2;
+      ctx.fillRect(antX - 2, antTop - 3, 5, 5);
+      ctx.shadowBlur = 0;
+
+      // PKiN Clock: Displays "LOL"
+      const clockY = by - 26;
+      ctx.fillStyle = '#000';
+      ctx.fillRect(antX - 18, clockY - 6, 36, 16);
+      ctx.strokeStyle = '#39ff14';
+      ctx.strokeRect(antX - 18, clockY - 6, 36, 16);
+      ctx.font = '8px "Press Start 2P"';
+      ctx.fillStyle = '#39ff14';
+      ctx.shadowColor = '#39ff14';
+      ctx.shadowBlur = 8;
+      ctx.fillText('LOL', antX - 13, clockY + 6);
+      ctx.shadowBlur = 0;
+    }
+
+    // Normal Spire
+    if (b.hasSpire && !b.isPKiN) {
+      ctx.fillStyle = b.color;
+      ctx.beginPath();
+      ctx.moveTo(b.x + b.w / 2 - 4, by);
+      ctx.lineTo(b.x + b.w / 2, by - 35);
+      ctx.lineTo(b.x + b.w / 2 + 4, by);
+      ctx.fill();
+    }
+
+    // Antenna
+    if (b.hasAntenna && !b.isPKiN) {
+      ctx.fillStyle = '#444';
+      ctx.fillRect(b.x + b.w / 2 - 1, by - 20, 2, 20);
+      ctx.fillStyle = (Math.sin(t * 3 + b.x) > 0) ? '#00e5ff' : '#002244';
+      ctx.fillRect(b.x + b.w / 2 - 1, by - 22, 3, 3);
+    }
+
+    // Neon rooftop line
+    if (b.accent) {
+      ctx.fillStyle = b.accent;
+      ctx.shadowColor = b.accent;
+      ctx.shadowBlur = 8;
+      ctx.fillRect(b.x, by, b.w, 2);
+      ctx.shadowBlur = 0;
+    }
+
+    // Building face sign
+    if (b.signText) {
+      ctx.font = '7px "Press Start 2P"';
+      ctx.fillStyle = b.signColor;
+      ctx.shadowColor = b.signColor;
+      ctx.shadowBlur = 10;
+      ctx.fillText(b.signText, b.x + 3, by + 28);
+      ctx.shadowBlur = 0;
+    }
+
+    // Windows
+    for (const win of b.windows) {
+      if (win.lit) {
+        ctx.fillStyle = win.color;
+        ctx.globalAlpha = 0.6 + Math.sin(t * 2 + win.x) * 0.25;
+        ctx.fillRect(b.x + win.x, by + win.y, 5, 6);
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+
+  // Hovering Warsaw Cyber-Tram 2077
+  tram.y = waterY - 32;
+  tram.x += tram.speed;
+  if (tram.x > W + 200) tram.x = -180;
+
+  ctx.fillStyle = '#cc0022';
+  ctx.fillRect(tram.x, tram.y, tram.w, tram.h);
+  ctx.fillStyle = '#ffe600';
+  ctx.fillRect(tram.x, tram.y + 14, tram.w, 3);
+  ctx.fillStyle = '#00e5ff';
+  for (let wi = 0; wi < 6; wi++) {
+    ctx.fillRect(tram.x + 8 + wi * 16, tram.y + 4, 10, 8);
+  }
+  // Thrusters
+  ctx.fillStyle = '#39ff14';
+  ctx.shadowColor = '#39ff14';
+  ctx.shadowBlur = 12;
+  ctx.fillRect(tram.x + 12, tram.y + tram.h, 18, 4);
+  ctx.fillRect(tram.x + tram.w - 30, tram.y + tram.h, 18, 4);
+  ctx.shadowBlur = 0;
+
+  if (Math.random() > 0.3) {
+    particles.push({
+      x: tram.x + 20, y: tram.y + tram.h + 2,
+      vx: -1.5 - Math.random() * 2, vy: (Math.random() - 0.5) * 1.5,
+      size: 2, color: '#39ff14', alpha: 0.8,
+      gravity: 0, drag: 0.96, life: 0.4, decay: 0.05
+    });
+  }
+
+  // Reflective Wisła River with Shimmering Ripple Shaders
+  const riverHeight = H - waterY;
+  const riverGrad = ctx.createLinearGradient(0, waterY, 0, H);
+  riverGrad.addColorStop(0, '#050010');
+  riverGrad.addColorStop(0.3, '#0a001c');
+  riverGrad.addColorStop(1, '#020006');
+  ctx.fillStyle = riverGrad;
+  ctx.fillRect(0, waterY, W, riverHeight);
+
+  // Neon river bank horizon lines
+  ctx.fillStyle = '#00e5ff';
+  ctx.shadowColor = '#00e5ff';
+  ctx.shadowBlur = 10;
+  ctx.fillRect(0, waterY, W, 2);
+  ctx.shadowBlur = 0;
+
+  ctx.fillStyle = '#39ff14';
+  ctx.shadowColor = '#39ff14';
+  ctx.shadowBlur = 8;
+  ctx.fillRect(0, waterY + 4, W, 1);
+  ctx.shadowBlur = 0;
+
+  // Water Ripple Shading
+  for (let y = waterY + 6; y < H; y += 4) {
+    const wave = Math.sin(y * 0.15 + t * 4);
+    const waveX = Math.cos(y * 0.08 + t * 2) * 15;
+    for (let x = 0; x < W; x += 12) {
+      if (Math.random() > 0.45) {
+        const colIdx = Math.floor(Math.abs(Math.sin(x * 0.02 + t)) * NEONS.length) % NEONS.length;
+        ctx.fillStyle = NEONS[colIdx];
+        ctx.globalAlpha = 0.12 * (1 - (y - waterY) / riverHeight);
+        ctx.fillRect(x + waveX, y + wave * 2, 8, 2);
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+
+  // Cyber Rain
+  ctx.lineWidth = 1;
+  for (const drop of rainDrops) {
+    ctx.strokeStyle = drop.color;
+    ctx.beginPath();
+    ctx.moveTo(drop.x, drop.y);
+    ctx.lineTo(drop.x + 1.5, drop.y + drop.len);
+    ctx.stroke();
+
+    drop.y += drop.speed;
+    drop.x += 0.8;
+    if (drop.y > H) {
+      drop.y = -drop.len;
+      drop.x = Math.random() * W;
+      if (Math.random() > 0.75) {
+        particles.push({
+          x: drop.x, y: waterY + Math.random() * 20,
+          vx: (Math.random() - 0.5) * 2, vy: -1 - Math.random() * 2,
+          size: 1.5, color: '#00e5ff', alpha: 0.6,
+          gravity: 0.2, drag: 0.9, life: 0.3, decay: 0.06
+        });
+      }
+    }
+  }
+
+  // Expanding Shockwaves
+  for (let i = shockwaves.length - 1; i >= 0; i--) {
+    const sw = shockwaves[i];
+    ctx.save();
+    ctx.strokeStyle = sw.color;
+    ctx.shadowColor = sw.color;
+    ctx.shadowBlur = 15;
+    ctx.lineWidth = sw.lineWidth;
+    ctx.globalAlpha = sw.alpha;
+    ctx.beginPath();
+    ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    sw.radius += (sw.maxRadius - sw.radius) * 0.12 + 2;
+    sw.alpha -= 0.028;
+    if (sw.alpha <= 0 || sw.radius >= sw.maxRadius) {
+      shockwaves.splice(i, 1);
+    }
+  }
+
+  // Active Confetti / Pixel Particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vx *= p.drag;
+    p.vy = p.vy * p.drag + p.gravity;
+    p.life -= p.decay;
+
+    if (p.life <= 0 || p.y > H) {
+      particles.splice(i, 1);
+      continue;
+    }
+
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillRect(Math.floor(p.x), Math.floor(p.y), p.size, p.size);
+    ctx.globalAlpha = 1;
+  }
+
+  // Floating Text Particles (+100 LP, KEKW, EZ, etc.)
+  for (let i = textParticles.length - 1; i >= 0; i--) {
+    const tp = textParticles[i];
+    tp.x += tp.vx;
+    tp.y += tp.vy;
+    tp.vy *= 0.97;
+    tp.alpha -= 0.016;
+
+    if (tp.alpha <= 0) {
+      textParticles.splice(i, 1);
+      continue;
+    }
+
+    ctx.save();
+    ctx.translate(tp.x, tp.y);
+    ctx.rotate(tp.rot);
+    ctx.font = `${Math.floor(12 * tp.scale)}px "Press Start 2P"`;
+    ctx.fillStyle = tp.color;
+    ctx.shadowColor = tp.color;
+    ctx.shadowBlur = 10;
+    ctx.globalAlpha = Math.max(0, tp.alpha);
+    ctx.fillText(tp.text, 0, 0);
+    ctx.restore();
+  }
+
+  // Pointer Trail
+  for (let i = pointerTrail.length - 1; i >= 0; i--) {
+    const pt = pointerTrail[i];
+    ctx.fillStyle = pt.color;
+    ctx.globalAlpha = pt.alpha;
+    ctx.fillRect(pt.x, pt.y, pt.size, pt.size);
+    pt.alpha -= 0.05;
+    if (pt.alpha <= 0) pointerTrail.splice(i, 1);
+  }
+  ctx.globalAlpha = 1;
+
+  // Occasional Hextech Lightning
+  if (Math.random() > 0.994 || lightningFlash > 0) {
+    ctx.fillStyle = 'rgba(176, 0, 255, 0.08)';
+    ctx.fillRect(0, 0, W, H);
+    if (lightningFlash > 0) lightningFlash--;
+  }
+
+  ctx.restore();
+  requestAnimationFrame(draw);
+}
+
+// Window resize handler
+window.addEventListener('resize', resize);
+
+// Launch
+resize();
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>
