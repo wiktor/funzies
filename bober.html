@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOBER — CYBER-BOBER · KRAKÓW × WISŁA 2077</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #020804;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    font-family: 'Press Start 2P', monospace;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: crosshair;
+  }
+
+  canvas#stage {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+  }
+
+  /* Retro Arcade Navigation */
+  .arcade-nav {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(4, 14, 8, 0.92);
+    border: 2px solid #00ff66;
+    box-shadow: 0 0 16px rgba(0, 255, 102, 0.45), inset 0 0 10px rgba(0, 255, 102, 0.2);
+    padding: 6px 14px;
+    border-radius: 4px;
+    pointer-events: auto;
+  }
+
+  .arcade-nav a {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(8px, 1.1vw, 11px);
+    color: #88aa99;
+    text-decoration: none;
+    padding: 6px 10px;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    letter-spacing: 0.1em;
+    display: inline-block;
+  }
+
+  .arcade-nav a:hover {
+    color: #ffffff;
+    border-color: #ff003c;
+    text-shadow: 0 0 8px #ff003c;
+    background: rgba(255, 0, 60, 0.2);
+  }
+
+  .arcade-nav a.active {
+    color: #ffe600;
+    border-color: #ffe600;
+    text-shadow: 0 0 10px #ffe600, 0 0 20px #ff6600;
+    background: rgba(255, 230, 0, 0.15);
+    box-shadow: 0 0 8px rgba(255, 230, 0, 0.3);
+  }
+
+  /* Top Left Mini-Game Stats */
+  .hud-top-left {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    pointer-events: none;
+  }
+
+  .hud-box {
+    font-size: clamp(7px, 0.95vw, 10px);
+    color: #00ff66;
+    text-shadow: 0 0 8px #00ff66;
+    background: rgba(4, 14, 8, 0.9);
+    border: 2px solid #00ff66;
+    box-shadow: 0 0 10px rgba(0, 255, 102, 0.3);
+    padding: 6px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  .hud-box.gold {
+    color: #ffe600;
+    border-color: #ffe600;
+    text-shadow: 0 0 8px #ffe600;
+    box-shadow: 0 0 10px rgba(255, 230, 0, 0.3);
+  }
+
+  /* Top Right Controls & Audio */
+  .hud-top-right {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    pointer-events: auto;
+  }
+
+  .hud-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(7px, 0.95vw, 10px);
+    background: rgba(4, 14, 8, 0.9);
+    color: #00ff66;
+    border: 2px solid #00ff66;
+    box-shadow: 0 0 10px rgba(0, 255, 102, 0.4);
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+
+  .hud-btn:hover {
+    background: #00ff66;
+    color: #000;
+    box-shadow: 0 0 18px rgba(0, 255, 102, 0.8);
+  }
+
+  .hud-btn.gold-btn {
+    color: #ffe600;
+    border-color: #ffe600;
+    box-shadow: 0 0 10px rgba(255, 230, 0, 0.4);
+  }
+
+  .hud-btn.gold-btn:hover {
+    background: #ffe600;
+    color: #000;
+    box-shadow: 0 0 18px rgba(255, 230, 0, 0.8);
+  }
+
+  /* Central Hero Overlay */
+  .overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    text-align: center;
+    padding: 20px;
+    transform: translateY(-6vh);
+  }
+
+  .title {
+    font-size: clamp(4.2rem, 15vw, 12.5rem);
+    color: #00ff66;
+    text-shadow:
+      0 0 10px #00ff66,
+      0 0 30px #00ff66,
+      0 0 70px #00ff66,
+      5px 5px 0 #ffe600,
+      -4px -4px 0 #ff003c;
+    animation: glitch 2.8s infinite, pulse 2.2s ease-in-out infinite, floatTitle 3.6s ease-in-out infinite;
+    letter-spacing: 0.14em;
+    margin-bottom: 0.2rem;
+  }
+
+  .subtitle {
+    font-size: clamp(0.6rem, 2vw, 1.4rem);
+    color: #ffe600;
+    text-shadow: 0 0 10px #ffe600, 0 0 25px #ff6600;
+    letter-spacing: 0.4em;
+    animation: flicker 3.2s infinite;
+    margin-top: 0.5rem;
+  }
+
+  .subtitle2 {
+    font-size: clamp(0.45rem, 1.15vw, 0.8rem);
+    color: #ff003c;
+    text-shadow: 0 0 8px #ff003c, 0 0 18px #ff003c;
+    letter-spacing: 0.35em;
+    margin-top: 0.8rem;
+    animation: flicker 4.5s infinite reverse;
+    opacity: 0.95;
+  }
+
+  .badge {
+    margin-top: 1.4rem;
+    font-size: clamp(0.4rem, 0.95vw, 0.68rem);
+    color: #00ff66;
+    text-shadow: 0 0 8px #00ff66;
+    letter-spacing: 0.2em;
+    border: 1px dashed rgba(0, 255, 102, 0.7);
+    padding: 7px 14px;
+    border-radius: 4px;
+    background: rgba(2, 12, 6, 0.75);
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+
+  /* Bottom Retro HUD Bar */
+  .hud-bottom {
+    position: fixed;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: clamp(6px, 0.8vw, 9px);
+    color: #ffe600;
+    text-shadow: 0 0 8px #ffe600;
+    background: rgba(4, 14, 8, 0.92);
+    border: 1px solid rgba(0, 255, 102, 0.5);
+    box-shadow: 0 0 12px rgba(0, 255, 102, 0.25);
+    padding: 6px 14px;
+    border-radius: 4px;
+    pointer-events: none;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+
+  .hud-sep {
+    color: #ff003c;
+  }
+
+  /* Scanlines CRT Overlay */
+  .scanlines {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 2;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 2px,
+      rgba(0, 0, 0, 0.16) 2px,
+      rgba(0, 0, 0, 0.16) 4px
+    );
+  }
+
+  /* Vignette CRT Overlay */
+  .vignette {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 2;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.8) 100%);
+  }
+
+  /* Keyframe Animations */
+  @keyframes glitch {
+    0%, 86%, 100% { transform: translate(0); filter: none; }
+    87% { transform: translate(-6px, 2px); filter: hue-rotate(45deg); }
+    88% { transform: translate(6px, -2px); filter: hue-rotate(-45deg); }
+    89% { transform: translate(-3px, -1px) skewX(4deg); }
+    90% { transform: translate(3px, 1px) skewX(-3deg); }
+    91% { transform: translate(0); filter: none; }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.78; }
+  }
+
+  @keyframes floatTitle {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-9px); }
+  }
+
+  @keyframes flicker {
+    0%, 92%, 100% { opacity: 1; }
+    93% { opacity: 0.25; }
+    94% { opacity: 0.95; }
+    95% { opacity: 0.3; }
+    96% { opacity: 0.85; }
+  }
+
+  @media (max-width: 768px) {
+    .arcade-nav { gap: 4px; padding: 4px 8px; }
+    .arcade-nav a { padding: 4px 6px; font-size: 8px; }
+    .hud-bottom { display: none; }
+    .hud-top-left { top: 58px; }
+    .hud-top-right { top: 58px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+
+<!-- ARCADE NAVIGATION -->
+<nav class="arcade-nav">
+  <a href="index.html">MAREK</a>
+  <a href="antos.html">ANTOS</a>
+  <a href="lol.html">LOL</a>
+  <a href="bober.html" class="active">★ BOBER</a>
+</nav>
+
+<!-- TOP-LEFT MINI-GAME SCORE & DAM LEVEL -->
+<div class="hud-top-left">
+  <div class="hud-box">KŁODY: <span id="score">00000</span></div>
+  <div class="hud-box gold">HI-SCORE: <span id="hiscore">00000</span></div>
+  <div class="hud-box">TAMA LVL: <span id="dam-lvl">1</span> (<span id="combo">x1</span>)</div>
+</div>
+
+<!-- TOP-RIGHT AUDIO & AUTO-PILOT CONTROLS -->
+<div class="hud-top-right">
+  <button id="auto-toggle" class="hud-btn gold-btn" title="Toggle Cyber-Bober AI Pilot">🤖 AI: OFF</button>
+  <button id="sfx-toggle" class="hud-btn" title="Toggle 8-bit Audio">🔊 SFX: ON</button>
+</div>
+
+<!-- CENTRAL HERO OVERLAY -->
+<div class="overlay">
+  <div class="title" id="main-title">BOBER</div>
+  <div class="subtitle">★ KRAKÓW 2077 × WISŁA DAM DEFENDER ★</div>
+  <div class="subtitle2">JAKIE BYDLĘ! // SMOK WAWELSKI OVERDRIVE</div>
+  <div class="badge">MOVE MOUSE / [←→] STEER BOBER • [CLICK] LASER • [SPACE] SMOK FIRE + EMP</div>
+</div>
+
+<!-- BOTTOM STATUS -->
+<div class="hud-bottom">
+  <span>[MOUSE / ←→] CATCH LOGS &amp; GOLD</span>
+  <span class="hud-sep">•</span>
+  <span>[CLICK] LASER BLAST</span>
+  <span class="hud-sep">•</span>
+  <span>[SPACE] SMOK BREATH &amp; DAM OVERDRIVE</span>
+  <span class="hud-sep">•</span>
+  <span>[A-Z] 8-BIT SYNTH</span>
+</div>
+
+<!-- CRT SCREEN OVERLAYS -->
+<div class="scanlines"></div>
+<div class="vignette"></div>
+
+<script>
+// ==========================================
+// 1. CANVAS & MATRIX NETRUNNER + GOLD PALETTE
+// ==========================================
+const canvas = document.getElementById('stage');
+const ctx = canvas.getContext('2d');
+let W, H, waterY;
+
+// Matrix Netrunner & Gold Palette:
+// Toxic Green #00ff66, Cyber Gold #ffe600, Crimson Alert #ff003c, Emerald #00cc44, Matrix Mint #80ffaa
+const NEONS = [
+  '#00ff66', // Toxic Matrix Green
+  '#ffe600', // Cyber Gold
+  '#ff003c', // Crimson Alert
+  '#00cc44', // Netrunner Emerald
+  '#ff8800'  // Dragon Amber
+];
+
+// ==========================================
+// 2. PROCEDURAL 8-BIT WEB AUDIO SYNTHESIZER
+// ==========================================
+let audioCtx = null;
+let sfxEnabled = true;
+
+function initAudio() {
+  if (!audioCtx) {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (AudioContextClass) {
+      audioCtx = new AudioContextClass();
+    }
+  }
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
+
+const sfxBtn = document.getElementById('sfx-toggle');
+sfxBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  initAudio();
+  sfxEnabled = !sfxEnabled;
+  sfxBtn.textContent = sfxEnabled ? '🔊 SFX: ON' : '🔇 SFX: OFF';
+  sfxBtn.style.color = sfxEnabled ? '#00ff66' : '#ff003c';
+  sfxBtn.style.borderColor = sfxEnabled ? '#00ff66' : '#ff003c';
+  if (sfxEnabled) playGoldChime();
+});
+
+// Sound: Crunchy 8-bit Bober Chomp (catching logs)
+function playBoberChomp() {
+  if (!sfxEnabled || !audioCtx) return;
+  const now = audioCtx.currentTime;
+  const freqs = [220, 330, 440, 660];
+  freqs.forEach((f, idx) => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = idx % 2 === 0 ? 'square' : 'sawtooth';
+    osc.frequency.setValueAtTime(f, now + idx * 0.04);
+    osc.frequency.exponentialRampToValueAtTime(f * 1.25, now + idx * 0.04 + 0.035);
+
+    gain.gain.setValueAtTime(0.08, now + idx * 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.04 + 0.04);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now + idx * 0.04);
+    osc.stop(now + idx * 0.04 + 0.045);
+  });
+}
+
+// Sound: Cyber Gold / Pierogi Powerup Chime
+function playGoldChime() {
+  if (!sfxEnabled || !audioCtx) return;
+  const now = audioCtx.currentTime;
+  const notes = [587.33, 880.0, 1174.66, 1760.0]; // D5, A5, D6, A6
+  notes.forEach((freq, i) => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(freq, now + i * 0.055);
+    gain.gain.setValueAtTime(0.07, now + i * 0.055);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.055 + 0.14);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now + i * 0.055);
+    osc.stop(now + i * 0.055 + 0.15);
+  });
+}
+
+// Sound: Crimson Alert / Glitch Hit
+function playAlertHit() {
+  if (!sfxEnabled || !audioCtx) return;
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(190, now);
+  osc.frequency.linearRampToValueAtTime(65, now + 0.28);
+  gain.gain.setValueAtTime(0.14, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(now);
+  osc.stop(now + 0.31);
+}
+
+// Sound: Bober Eye-Visor Laser Pew
+function playLaser() {
+  if (!sfxEnabled || !audioCtx) return;
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(1600, now);
+  osc.frequency.exponentialRampToValueAtTime(120, now + 0.14);
+  gain.gain.setValueAtTime(0.08, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(now);
+  osc.stop(now + 0.15);
+}
+
+// Sound: Smok Wawelski Fire Roar + Dam EMP Blast
+function playSmokRoar() {
+  if (!sfxEnabled || !audioCtx) return;
+  const now = audioCtx.currentTime;
+
+  // Sub-bass dragon drop
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(220, now);
+  osc.frequency.exponentialRampToValueAtTime(32, now + 0.6);
+  gain.gain.setValueAtTime(0.26, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.62);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(now);
+  osc.stop(now + 0.64);
+
+  // Fire breath filtered white noise
+  const bufferSize = Math.floor(audioCtx.sampleRate * 0.45);
+  const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const output = noiseBuffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    output[i] = Math.random() * 2 - 1;
+  }
+  const whiteNoise = audioCtx.createBufferSource();
+  whiteNoise.buffer = noiseBuffer;
+
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.setValueAtTime(1100, now);
+  filter.frequency.exponentialRampToValueAtTime(180, now + 0.45);
+
+  const noiseGain = audioCtx.createGain();
+  noiseGain.gain.setValueAtTime(0.16, now);
+  noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+  whiteNoise.connect(filter);
+  filter.connect(noiseGain);
+  noiseGain.connect(audioCtx.destination);
+  whiteNoise.start(now);
+  whiteNoise.stop(now + 0.46);
+}
+
+// Sound: Keyboard A-Z 8-bit Synth Note
+function playChipNote(freq) {
+  if (!sfxEnabled || !audioCtx) return;
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'square';
+  osc.frequency.setValueAtTime(freq, now);
+  osc.frequency.setValueAtTime(freq * 1.005, now + 0.05);
+  gain.gain.setValueAtTime(0.07, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(now);
+  osc.stop(now + 0.2);
+}
+
+// ==========================================
+// 3. KRAKÓW 2077 SKYLINE, WAWEL, SUKIENNICE & SMOK
+// ==========================================
+let stars = [];
+let matrixColumns = [];
+let buildings = [];
+
+function initStars() {
+  stars = Array.from({ length: 140 }, () => ({
+    x: Math.random() * W,
+    y: Math.random() * (H * 0.55),
+    size: 1 + Math.random() * 2,
+    blinkOffset: Math.random() * Math.PI * 2,
+    blinkSpeed: 1 + Math.random() * 2.5,
+    isGold: Math.random() > 0.7
+  }));
+}
+
+function initMatrixRain() {
+  const colWidth = 22;
+  const count = Math.ceil(W / colWidth);
+  const chars = 'BOBER01WAWEL2077SMOKKURWA777@#$%*+';
+  matrixColumns = Array.from({ length: count }, (_, i) => ({
+    x: i * colWidth + 6,
+    y: Math.random() * H,
+    speed: 2.5 + Math.random() * 5,
+    len: 5 + Math.floor(Math.random() * 10),
+    chars: Array.from({ length: 16 }, () => chars[Math.floor(Math.random() * chars.length)])
+  }));
+}
+
+// Generate Kraków 2077 Skyline:
+// Features Cyber-Wawel Castle, Sukiennice Arcades, Kościół Mariacki Twin Spires, and Netrunner Towers
+function initSkyline() {
+  buildings = [];
+  let cx = 0;
+  let placedWawel = false;
+  let placedSukiennice = false;
+  let placedMariacki = false;
+
+  while (cx < W + 100) {
+    // Place Cyber-Wawel near left-center
+    if (!placedWawel && cx > W * 0.18) {
+      placedWawel = true;
+      const bw = 130;
+      const bh = H * 0.42;
+      buildings.push({
+        x: cx, w: bw, h: bh,
+        type: 'wawel',
+        color: '#06150c',
+        accent: '#ffe600',
+        windows: generateWindows(bw, bh)
+      });
+      cx += bw + 8;
+      continue;
+    }
+
+    // Place Sukiennice (Cloth Hall with neon arcades) near center
+    if (!placedSukiennice && cx > W * 0.44) {
+      placedSukiennice = true;
+      const bw = 150;
+      const bh = H * 0.28;
+      buildings.push({
+        x: cx, w: bw, h: bh,
+        type: 'sukiennice',
+        color: '#081b0f',
+        accent: '#ffe600',
+        windows: generateWindows(bw, bh)
+      });
+      cx += bw + 8;
+      continue;
+    }
+
+    // Place Kościół Mariacki (St. Mary's Basilica twin towers) near right-center
+    if (!placedMariacki && cx > W * 0.68) {
+      placedMariacki = true;
+      const bw = 96;
+      const bh = H * 0.48;
+      buildings.push({
+        x: cx, w: bw, h: bh,
+        type: 'mariacki',
+        color: '#05120a',
+        accent: '#00ff66',
+        windows: generateWindows(bw, bh)
+      });
+      cx += bw + 8;
+      continue;
+    }
+
+    const bw = 34 + Math.floor(Math.random() * 56);
+    const bh = 80 + Math.random() * (H * 0.46);
+    const greenShade = 6 + Math.floor(Math.random() * 8);
+    buildings.push({
+      x: cx,
+      w: bw,
+      h: bh,
+      type: 'tower',
+      color: `hsl(${140 + Math.random() * 25}, 45%, ${greenShade}%)`,
+      windows: generateWindows(bw, bh),
+      hasSpire: Math.random() > 0.72,
+      hasAntenna: Math.random() > 0.55,
+      accent: Math.random() > 0.3 ? NEONS[Math.floor(Math.random() * 3)] : null,
+      signText: Math.random() > 0.65
+        ? ['BOBER', 'WAWEL', '2077', 'MORDOR', 'METRO', 'SMOK'][Math.floor(Math.random() * 6)]
+        : null,
+      signColor: NEONS[Math.floor(Math.random() * 3)]
+    });
+
+    cx += bw + 4 + Math.floor(Math.random() * 10);
+  }
+}
+
+function generateWindows(bw, bh) {
+  const wins = [];
+  const cols = Math.floor(bw / 12);
+  const rows = Math.floor(bh / 14);
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (Math.random() > 0.38) {
+        const rnd = Math.random();
+        wins.push({
+          x: 5 + c * 12,
+          y: 10 + r * 14,
+          lit: Math.random() > 0.22,
+          color: rnd > 0.55 ? '#00ff66' : (rnd > 0.2 ? '#ffe600' : '#ff003c')
+        });
+      }
+    }
+  }
+  return wins;
+}
+
+// Warsaw Local Lore + Bober Hologram Signs
+const loreSigns = [
+  'MORDOR', 'STADION', 'ZŁOTE TARASY', 'METRO M2',
+  'PRAGA PÓŁNOC', 'PONIATOWSKI', 'BOBER KURWA!', 'SMOK WAWELSKI'
+];
+let floatingHolograms = [];
+function initHolograms() {
+  floatingHolograms = loreSigns.map((text, i) => ({
+    text,
+    x: 24 + (i * ((W - 120) / loreSigns.length)),
+    baseY: 64 + (i % 3) * 48 + Math.random() * 20,
+    color: i % 3 === 0 ? '#00ff66' : (i % 3 === 1 ? '#ffe600' : '#ff003c'),
+    speed: 0.9 + Math.random() * 1.3,
+    phase: Math.random() * Math.PI * 2
+  }));
+}
+
+// Hovering Cyber-Polonez & Maluch 126p 2077
+let vehicles = [
+  {
+    name: 'POLONEZ 2077',
+    x: -180,
+    yOffset: -42,
+    w: 98,
+    h: 22,
+    speed: 2.6,
+    dir: 1,
+    bodyColor: '#ff003c',
+    glowColor: '#00ff66'
+  },
+  {
+    name: 'MALUCH 126p',
+    x: 900,
+    yOffset: -74,
+    w: 64,
+    h: 18,
+    speed: 1.9,
+    dir: -1,
+    bodyColor: '#ffe600',
+    glowColor: '#ff003c'
+  }
+];
+
+// Smok Wawelski (Mechanical Fire-Breathing Dragon on Left Riverbank)
+let smok = {
+  fireTimer: 0,
+  jawAngle: 0
+};
+
+// ==========================================
+// 4. PLAYABLE CYBER-BOBER MINI-GAME STATE
+// ==========================================
+let score = 0;
+let hiScore = parseInt(localStorage.getItem('cyber_bober_hiscore') || '0', 10);
+let combo = 1;
+let damLevel = 1;
+let damLogs = 0;
+let autoPilot = false;
+let screenShake = 0;
+let empFlash = 0;
+
+const scoreEl = document.getElementById('score');
+const hiScoreEl = document.getElementById('hiscore');
+const damLvlEl = document.getElementById('dam-lvl');
+const comboEl = document.getElementById('combo');
+const autoBtn = document.getElementById('auto-toggle');
+
+hiScoreEl.textContent = String(hiScore).padStart(5, '0');
+
+autoBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  initAudio();
+  autoPilot = !autoPilot;
+  autoBtn.textContent = autoPilot ? '🤖 AI: ON' : '🤖 AI: OFF';
+  autoBtn.style.background = autoPilot ? '#ffe600' : 'rgba(4, 14, 8, 0.9)';
+  autoBtn.style.color = autoPilot ? '#000' : '#ffe600';
+  playGoldChime();
+});
+
+const bober = {
+  x: 400,
+  targetX: 400,
+  y: 0,
+  w: 76,
+  h: 34,
+  vx: 0,
+  facing: 1,
+  chompTimer: 0,
+  tailAngle: 0
+};
+
+const keysHeld = { left: false, right: false };
+
+// Falling Mini-Game Items (Logs, Golden Pierogi, Matrix Cubes, Crimson Glitch Mines)
+let fallingItems = [];
+let lasers = [];
+let particles = [];
+let textParticles = [];
+let shockwaves = [];
+
+function spawnFallingItem() {
+  if (fallingItems.length >= 10) return;
+  const rnd = Math.random();
+  let type = 'log';
+  if (rnd > 0.84) type = 'mine';       // Crimson Alert Glitch Mine
+  else if (rnd > 0.65) type = 'gold';  // Cyber Gold Pieróg / Crown
+  else if (rnd > 0.45) type = 'cube';  // Matrix Data Cube
+
+  fallingItems.push({
+    x: 60 + Math.random() * (W - 120),
+    y: -30,
+    vx: (Math.random() - 0.5) * 0.8,
+    vy: 1.8 + Math.random() * 2.2 + Math.min(2.5, damLevel * 0.15),
+    type,
+    rot: Math.random() * Math.PI * 2,
+    rotSpeed: (Math.random() - 0.5) * 0.06,
+    size: type === 'log' ? 28 : 20
+  });
+}
+
+function addScore(pts) {
+  score += pts * combo;
+  if (score > hiScore) {
+    hiScore = score;
+    localStorage.setItem('cyber_bober_hiscore', String(hiScore));
+  }
+  scoreEl.textContent = String(score).padStart(5, '0');
+  hiScoreEl.textContent = String(hiScore).padStart(5, '0');
+  damLvlEl.textContent = String(damLevel);
+  comboEl.textContent = 'x' + combo;
+}
+
+function spawnFloatingText(text, x, y, color = '#ffe600', scale = 1.1) {
+  textParticles.push({
+    text,
+    x, y,
+    vx: (Math.random() - 0.5) * 2,
+    vy: -2.2 - Math.random() * 2,
+    color,
+    alpha: 1.0,
+    scale,
+    rot: (Math.random() - 0.5) * 0.3
+  });
+}
+
+function createExplosion(x, y, count = 30, colorOverride = null, isMega = false) {
+  screenShake = Math.max(screenShake, isMega ? 16 : 6);
+
+  shockwaves.push({
+    x, y,
+    radius: 6,
+    maxRadius: isMega ? Math.max(W, H) * 0.75 : 120,
+    color: colorOverride || (isMega ? '#ffe600' : '#00ff66'),
+    alpha: 1.0,
+    lineWidth: isMega ? 8 : 4
+  });
+
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = (isMega ? 4 : 2) + Math.random() * (isMega ? 13 : 7);
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 1.5,
+      size: 3 + Math.floor(Math.random() * 4),
+      color: colorOverride || NEONS[Math.floor(Math.random() * NEONS.length)],
+      gravity: 0.16,
+      drag: 0.97,
+      life: 1.0,
+      decay: 0.015 + Math.random() * 0.02
+    });
+  }
+}
+
+// ==========================================
+// 5. INPUT CONTROLS & A-Z SYNTH SOUNDBOARD
+// ==========================================
+window.addEventListener('pointermove', (e) => {
+  if (!autoPilot) {
+    bober.targetX = Math.max(50, Math.min(W - 50, e.clientX));
+  }
+  if (Math.random() > 0.35) {
+    particles.push({
+      x: e.clientX,
+      y: e.clientY,
+      vx: (Math.random() - 0.5) * 1.2,
+      vy: (Math.random() - 0.5) * 1.2,
+      size: 2.5,
+      color: Math.random() > 0.5 ? '#00ff66' : '#ffe600',
+      gravity: 0,
+      drag: 0.95,
+      life: 0.5,
+      decay: 0.04
+    });
+  }
+});
+
+// Click fires laser from Cyber-Bober's visor to cursor & blasts mines
+window.addEventListener('pointerdown', (e) => {
+  if (e.target.closest('.arcade-nav') || e.target.closest('.hud-top-right')) return;
+  initAudio();
+  playLaser();
+
+  const tx = e.clientX;
+  const ty = e.clientY;
+  bober.targetX = Math.max(50, Math.min(W - 50, tx));
+
+  lasers.push({
+    x1: bober.x + bober.facing * 18,
+    y1: bober.y - 10,
+    x2: tx,
+    y2: ty,
+    alpha: 1.0,
+    color: '#ff003c'
+  });
+
+  createExplosion(tx, ty, 28, '#00ff66', false);
+
+  // Check if click blasted any falling items/mines
+  let hitMine = false;
+  for (let i = fallingItems.length - 1; i >= 0; i--) {
+    const it = fallingItems[i];
+    const dist = Math.hypot(it.x - tx, it.y - ty);
+    if (dist < 65) {
+      if (it.type === 'mine') {
+        hitMine = true;
+        addScore(300);
+        spawnFloatingText('MINE SNIPED! +300', it.x, it.y, '#00ff66', 1.3);
+      } else {
+        addScore(150);
+        spawnFloatingText('LASER CATCH! +150', it.x, it.y, '#ffe600', 1.1);
+      }
+      fallingItems.splice(i, 1);
+    }
+  }
+
+  if (!hitMine) {
+    const phrases = ['BOBER KURWA!', 'JAKIE BYDLĘ!', 'GRYZIE!', 'ALE BOBER!', '+100 KŁODA', 'WAWEL 2077'];
+    spawnFloatingText(phrases[Math.floor(Math.random() * phrases.length)], tx, ty - 12, '#ffe600', 1.1);
+    addScore(50);
+  }
+});
+
+// Full A-Z 8-bit Synth Scale
+const keyScale = {
+  'q': 261.63, 'w': 293.66, 'e': 329.63, 'r': 349.23, 't': 392.00, 'y': 440.00, 'u': 493.88, 'i': 523.25, 'o': 587.33, 'p': 659.25,
+  'a': 392.00, 's': 440.00, 'd': 493.88, 'f': 523.25, 'g': 587.33, 'h': 659.25, 'j': 698.46, 'k': 783.99, 'l': 880.00,
+  'z': 523.25, 'x': 659.25, 'c': 783.99, 'v': 987.77, 'b': 1046.50, 'n': 1174.66, 'm': 1318.51
+};
+
+window.addEventListener('keydown', (e) => {
+  initAudio();
+  const k = e.key.toLowerCase();
+
+  if (e.key === 'ArrowLeft') { keysHeld.left = true; autoPilot = false; }
+  if (e.key === 'ArrowRight') { keysHeld.right = true; autoPilot = false; }
+
+  // Spacebar: Smok Wawelski Fire Breath + Mega Dam Overdrive
+  if (e.code === 'Space') {
+    e.preventDefault();
+    triggerSmokOverdrive();
+    return;
+  }
+
+  // Keyboard A-Z 8-bit synth soundboard + visual burst
+  if (keyScale[k] && !e.repeat) {
+    playChipNote(keyScale[k]);
+    addScore(25);
+
+    const rx = W * 0.15 + Math.random() * (W * 0.7);
+    const ry = H * 0.22 + Math.random() * (H * 0.35);
+    const words = [
+      `[${k.toUpperCase()}] BOBER!`,
+      `[${k.toUpperCase()}] KURWA!`,
+      `[${k.toUpperCase()}] SMOK!`,
+      `[${k.toUpperCase()}] MORDOR!`,
+      `[${k.toUpperCase()}] 2077!`
+    ];
+    spawnFloatingText(words[Math.floor(Math.random() * words.length)], rx, ry, NEONS[Math.floor(Math.random() * 3)], 1.25);
+    createExplosion(rx, ry, 14, null, false);
+  }
+});
+
+window.addEventListener('keyup', (e) => {
+  if (e.key === 'ArrowLeft') keysHeld.left = false;
+  if (e.key === 'ArrowRight') keysHeld.right = false;
+});
+
+function triggerSmokOverdrive() {
+  playSmokRoar();
+  smok.fireTimer = 55;
+  empFlash = 12;
+  createExplosion(W * 0.5, H * 0.45, 110, '#ffe600', true);
+  spawnFloatingText('★ SMOK WAWELSKI × MEGA TAMA OVERDRIVE! ★', W * 0.32, H * 0.38, '#ffe600', 1.5);
+
+  // Convert all falling items on screen into bonus points!
+  for (const it of fallingItems) {
+    createExplosion(it.x, it.y, 12, '#00ff66', false);
+    addScore(100);
+  }
+  fallingItems = [];
+  addScore(500);
+}
+
+// ==========================================
+// 6. DRAWING HELPERS (SMOK, BOBER, VEHICLES)
+// ==========================================
+function drawSpecialBuilding(b, by, t) {
+  if (b.type === 'wawel') {
+    // Cyber-Wawel Royal Castle with Cathedral Spires & Glowing Crown
+    ctx.fillStyle = b.color;
+    ctx.fillRect(b.x, by, b.w, b.h);
+
+    // Battlements
+    for (let bx = b.x; bx < b.x + b.w; bx += 16) {
+      ctx.fillRect(bx, by - 10, 10, 10);
+    }
+
+    // Left Cathedral Tower (Sigismund Bell Tower)
+    ctx.fillRect(b.x + 14, by - 48, 28, 48);
+    ctx.fillStyle = '#00ff66';
+    ctx.beginPath();
+    ctx.moveTo(b.x + 12, by - 48);
+    ctx.lineTo(b.x + 28, by - 82);
+    ctx.lineTo(b.x + 44, by - 48);
+    ctx.fill();
+
+    // Right Royal Spire with Golden Crown
+    ctx.fillStyle = b.color;
+    ctx.fillRect(b.x + b.w - 42, by - 60, 26, 60);
+    ctx.fillStyle = '#ffe600';
+    ctx.shadowColor = '#ffe600';
+    ctx.shadowBlur = 12;
+    ctx.fillRect(b.x + b.w - 36, by - 72, 14, 10);
+    ctx.shadowBlur = 0;
+
+    // Wawel Neon Sign
+    ctx.font = '8px "Press Start 2P"';
+    ctx.fillStyle = '#ffe600';
+    ctx.shadowColor = '#ffe600';
+    ctx.shadowBlur = 10;
+    ctx.fillText('WAWEL 2077', b.x + 18, by + 26);
+    ctx.shadowBlur = 0;
+  } else if (b.type === 'sukiennice') {
+    // Sukiennice Cloth Hall with Neon Arcades & BOBER Clock
+    ctx.fillStyle = b.color;
+    ctx.fillRect(b.x, by, b.w, b.h);
+
+    // Renaissance Attic Parapet
+    for (let sx = b.x + 4; sx < b.x + b.w - 8; sx += 14) {
+      ctx.fillStyle = '#ffe600';
+      ctx.fillRect(sx, by - 8, 8, 8);
+    }
+
+    // Central Clock Tower reading "BOBER"
+    const cx = b.x + b.w / 2;
+    ctx.fillStyle = b.color;
+    ctx.fillRect(cx - 26, by - 42, 52, 42);
+    ctx.strokeStyle = '#00ff66';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(cx - 24, by - 36, 48, 18);
+
+    ctx.font = '8px "Press Start 2P"';
+    ctx.fillStyle = '#00ff66';
+    ctx.shadowColor = '#00ff66';
+    ctx.shadowBlur = 8;
+    ctx.fillText('BOBER', cx - 20, by - 23);
+    ctx.shadowBlur = 0;
+
+    // Glowing Ground Arcades
+    for (let ax = b.x + 10; ax < b.x + b.w - 14; ax += 22) {
+      ctx.fillStyle = 'rgba(255, 230, 0, 0.35)';
+      ctx.fillRect(ax, waterY - 26, 12, 26);
+    }
+  } else if (b.type === 'mariacki') {
+    // Kościół Mariacki Twin Asymmetric Towers
+    ctx.fillStyle = b.color;
+    ctx.fillRect(b.x, by, b.w, b.h);
+
+    // Taller Hejnalica Tower (Left)
+    ctx.fillRect(b.x + 6, by - 75, 32, 75);
+    ctx.fillStyle = '#ffe600';
+    ctx.beginPath();
+    ctx.moveTo(b.x + 4, by - 75);
+    ctx.lineTo(b.x + 22, by - 125);
+    ctx.lineTo(b.x + 40, by - 75);
+    ctx.fill();
+
+    // Blinking Crimson Hejnał Beacon
+    if (Math.sin(t * 5) > 0) {
+      ctx.fillStyle = '#ff003c';
+      ctx.shadowColor = '#ff003c';
+      ctx.shadowBlur = 16;
+      ctx.fillRect(b.x + 19, by - 130, 6, 6);
+      ctx.shadowBlur = 0;
+    }
+
+    // Shorter Tower (Right)
+    ctx.fillStyle = b.color;
+    ctx.fillRect(b.x + b.w - 36, by - 45, 28, 45);
+    ctx.fillStyle = '#00ff66';
+    ctx.beginPath();
+    ctx.moveTo(b.x + b.w - 38, by - 45);
+    ctx.lineTo(b.x + b.w - 22, by - 80);
+    ctx.lineTo(b.x + b.w - 6, by - 45);
+    ctx.fill();
+  }
+}
+
+// Mechanical Fire-Breathing Smok Wawelski on Left Bank
+function drawSmokWawelski(t) {
+  const sx = 46;
+  const sy = waterY - 8;
+
+  // Periodic automatic fire breath
+  if (Math.sin(t * 1.4) > 0.82 && smok.fireTimer <= 0) {
+    smok.fireTimer = 28;
+  }
+
+  ctx.save();
+  // Mecha Dragon Body (pixel blocks)
+  ctx.fillStyle = '#0c2616';
+  ctx.strokeStyle = '#00ff66';
+  ctx.lineWidth = 2;
+
+  // Tail & Spine plates
+  ctx.fillRect(sx - 30, sy - 18, 26, 14);
+  ctx.fillRect(sx - 10, sy - 42, 34, 38);
+  ctx.strokeRect(sx - 10, sy - 42, 34, 38);
+
+  // Glowing Golden Spine Spikes
+  ctx.fillStyle = '#ffe600';
+  for (let i = 0; i < 4; i++) {
+    ctx.fillRect(sx - 14 + i * 8, sy - 50 - i * 4, 6, 8);
+  }
+
+  // Neck & Mecha Head
+  ctx.fillStyle = '#10331d';
+  ctx.fillRect(sx + 10, sy - 68, 20, 30);
+  ctx.fillRect(sx + 18, sy - 80, 32, 18);
+
+  // Crimson Cyber Eye
+  ctx.fillStyle = '#ff003c';
+  ctx.shadowColor = '#ff003c';
+  ctx.shadowBlur = 10;
+  ctx.fillRect(sx + 34, sy - 76, 6, 6);
+  ctx.shadowBlur = 0;
+
+  // Lower Jaw (opens when breathing fire)
+  const jawDrop = smok.fireTimer > 0 ? 8 : 2;
+  ctx.fillStyle = '#0c2616';
+  ctx.fillRect(sx + 24, sy - 62 + jawDrop, 24, 6);
+
+  // Fire Breath Stream!
+  if (smok.fireTimer > 0) {
+    smok.fireTimer--;
+    for (let f = 0; f < 5; f++) {
+      particles.push({
+        x: sx + 52,
+        y: sy - 64 + (Math.random() - 0.5) * 6,
+        vx: 5 + Math.random() * 7,
+        vy: -1.5 + (Math.random() - 0.5) * 3,
+        size: 4 + Math.random() * 5,
+        color: Math.random() > 0.45 ? '#ffe600' : (Math.random() > 0.4 ? '#00ff66' : '#ff003c'),
+        gravity: -0.03,
+        drag: 0.98,
+        life: 0.75,
+        decay: 0.03
+      });
+    }
+  }
+  ctx.restore();
+}
+
+// Draw Hovering Cyber-Polonez & Maluch 2077
+function drawVehicles(t) {
+  for (const v of vehicles) {
+    v.x += v.speed * v.dir;
+    if (v.dir === 1 && v.x > W + 220) v.x = -220;
+    if (v.dir === -1 && v.x < -220) v.x = W + 220;
+
+    const vy = waterY + v.yOffset + Math.sin(t * 3 + v.w) * 3;
+
+    ctx.save();
+    // Underglow
+    ctx.fillStyle = v.glowColor;
+    ctx.shadowColor = v.glowColor;
+    ctx.shadowBlur = 16;
+    ctx.fillRect(v.x + 6, vy + v.h, v.w - 12, 4);
+    ctx.shadowBlur = 0;
+
+    // Car lower chassis
+    ctx.fillStyle = v.bodyColor;
+    ctx.fillRect(v.x, vy + 7, v.w, v.h - 7);
+
+    // Wedge cabin (iconic Polonez / Maluch silhouette)
+    ctx.fillRect(v.x + 14, vy, v.w - 28, 9);
+
+    // Neon windows
+    ctx.fillStyle = '#00ff66';
+    ctx.fillRect(v.x + 18, vy + 2, (v.w - 36) * 0.45, 6);
+    ctx.fillRect(v.x + 22 + (v.w - 36) * 0.48, vy + 2, (v.w - 36) * 0.42, 6);
+
+    // Side Cyber Stripe
+    ctx.fillStyle = '#ffe600';
+    ctx.fillRect(v.x + 2, vy + 12, v.w - 4, 2);
+
+    // Thruster flame particles
+    const thrusterX = v.dir === 1 ? v.x - 4 : v.x + v.w + 4;
+    if (Math.random() > 0.25) {
+      particles.push({
+        x: thrusterX,
+        y: vy + 12,
+        vx: -v.dir * (2 + Math.random() * 3),
+        vy: (Math.random() - 0.5) * 1.2,
+        size: 3,
+        color: Math.random() > 0.5 ? '#ffe600' : '#00ff66',
+        gravity: 0,
+        drag: 0.94,
+        life: 0.45,
+        decay: 0.05
+      });
+    }
+    ctx.restore();
+  }
+}
+
+// Draw Cyber-Dam (Tama) across the Wisła River
+function drawCyberDam(t) {
+  const blocks = Math.min(24, damLevel * 2 + Math.floor(damLogs / 2));
+  const blockW = 28;
+  const startX = W * 0.5 - (blocks * blockW) / 2;
+  const damY = waterY + 8;
+
+  ctx.save();
+  for (let i = 0; i < blocks; i++) {
+    const bx = startX + i * blockW;
+    const pulse = Math.sin(t * 3 + i) * 2;
+    ctx.fillStyle = '#3a2210';
+    ctx.strokeStyle = i % 2 === 0 ? '#00ff66' : '#ffe600';
+    ctx.lineWidth = 1.5;
+    ctx.fillRect(bx, damY + pulse, blockW - 4, 10);
+    ctx.strokeRect(bx, damY + pulse, blockW - 4, 10);
+  }
+  ctx.restore();
+}
+
+// Draw Player: 8-Bit Cyber-Bober on Neon Jet-Log
+function drawCyberBober(t) {
+  bober.y = waterY + 26 + Math.sin(t * 4) * 3;
+
+  // Update position via keyboard or AI or mouse target
+  if (keysHeld.left) bober.targetX -= 9;
+  if (keysHeld.right) bober.targetX += 9;
+
+  if (autoPilot && fallingItems.length > 0) {
+    // Find lowest non-mine item
+    let best = null;
+    for (const it of fallingItems) {
+      if (it.type !== 'mine') {
+        if (!best || it.y > best.y) best = it;
+      }
+    }
+    if (best) bober.targetX = best.x;
+  }
+
+  bober.targetX = Math.max(45, Math.min(W - 45, bober.targetX));
+  const dx = bober.targetX - bober.x;
+  if (Math.abs(dx) > 1.5) {
+    bober.facing = dx > 0 ? 1 : -1;
+  }
+  bober.x += dx * 0.18;
+
+  ctx.save();
+  ctx.translate(bober.x, bober.y);
+  ctx.scale(bober.facing, 1);
+
+  // 1. Neon Hover-Log / Surfboard
+  ctx.fillStyle = '#4e2c14';
+  ctx.strokeStyle = '#ffe600';
+  ctx.lineWidth = 2;
+  ctx.fillRect(-38, 8, 76, 12);
+  ctx.strokeRect(-38, 8, 76, 12);
+
+  // Hover-Log Neon Thruster Glow
+  ctx.fillStyle = '#00ff66';
+  ctx.shadowColor = '#00ff66';
+  ctx.shadowBlur = 14;
+  ctx.fillRect(-32, 20, 64, 3);
+  ctx.shadowBlur = 0;
+
+  // 2. Beaver Paddle Tail (wags!)
+  const tailWag = Math.sin(t * 10) * 4;
+  ctx.fillStyle = '#2d180a';
+  ctx.strokeStyle = '#00ff66';
+  ctx.fillRect(-48, -2 + tailWag, 18, 10);
+  ctx.strokeRect(-48, -2 + tailWag, 18, 10);
+
+  // 3. Chubby Pixel Beaver Body
+  ctx.fillStyle = '#7a441e';
+  ctx.fillRect(-20, -18, 38, 26);
+  // Belly fur
+  ctx.fillStyle = '#9c5a2b';
+  ctx.fillRect(-8, -12, 20, 18);
+
+  // 4. Beaver Head & Ears
+  ctx.fillStyle = '#7a441e';
+  ctx.fillRect(6, -28, 24, 20);
+  ctx.fillRect(8, -33, 6, 5); // ear
+
+  // 5. Cyber-Netrunner Visor (Glowing Toxic Green + Gold)
+  ctx.fillStyle = '#00ff66';
+  ctx.shadowColor = '#00ff66';
+  ctx.shadowBlur = 10;
+  ctx.fillRect(16, -24, 16, 6);
+  ctx.shadowBlur = 0;
+
+  // 6. Iconic Giant White/Gold Beaver Incisor Teeth!
+  const chompOffset = bober.chompTimer > 0 ? (Math.sin(t * 30) * 3) : 0;
+  if (bober.chompTimer > 0) bober.chompTimer--;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(24, -8 + chompOffset, 4, 8);
+  ctx.fillRect(29, -8 + chompOffset, 4, 8);
+
+  ctx.restore();
+}
+
+// ==========================================
+// 7. MAIN ANIMATION & GAME LOOP
+// ==========================================
+let t = 0;
+
+function draw() {
+  t += 0.016;
+
+  ctx.save();
+  if (screenShake > 0) {
+    ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
+    screenShake *= 0.88;
+    if (screenShake < 0.3) screenShake = 0;
+  }
+
+  // 1. Matrix Night Sky Gradient
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+  skyGrad.addColorStop(0, '#010602');
+  skyGrad.addColorStop(0.35, '#031208');
+  skyGrad.addColorStop(0.68, '#062010');
+  skyGrad.addColorStop(1, '#020a04');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // 2. Stars
+  for (const s of stars) {
+    const alpha = 0.3 + 0.7 * Math.abs(Math.sin(t * s.blinkSpeed + s.blinkOffset));
+    ctx.fillStyle = s.isGold ? `rgba(255, 230, 0, ${alpha})` : `rgba(0, 255, 102, ${alpha})`;
+    ctx.fillRect(Math.floor(s.x), Math.floor(s.y), s.size, s.size);
+  }
+
+  // 3. Matrix Netrunner Code Rain in Background Sky
+  ctx.font = '10px "Press Start 2P"';
+  for (const col of matrixColumns) {
+    col.y += col.speed;
+    if (col.y - col.len * 14 > waterY) {
+      col.y = -20;
+    }
+    for (let j = 0; j < col.len; j++) {
+      const cy = col.y - j * 14;
+      if (cy > 0 && cy < waterY) {
+        const isHead = j === 0;
+        ctx.fillStyle = isHead ? '#ffe600' : `rgba(0, 255, 102, ${0.22 * (1 - j / col.len)})`;
+        ctx.fillText(col.chars[j % col.chars.length], col.x, cy);
+      }
+    }
+  }
+
+  // 4. Golden Cyber Moon with Matrix Target Ring
+  const moonX = W * 0.84;
+  const moonY = H * 0.14;
+  ctx.save();
+  ctx.fillStyle = '#ffe600';
+  ctx.shadowColor = '#ffe600';
+  ctx.shadowBlur = 35;
+  ctx.beginPath();
+  ctx.arc(moonX, moonY, 26, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#00ff66';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(moonX, moonY, 35, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // 5. Floating Warsaw Local Lore + Kraków Hologram Signs
+  ctx.font = '9px "Press Start 2P"';
+  for (const holo of floatingHolograms) {
+    const hy = holo.baseY + Math.sin(t * holo.speed + holo.phase) * 7;
+    ctx.fillStyle = holo.color;
+    ctx.shadowColor = holo.color;
+    ctx.shadowBlur = 12;
+    ctx.fillText(holo.text, holo.x, hy);
+    ctx.shadowBlur = 0;
+  }
+
+  // 6. Kraków 2077 Skyline (Wawel, Sukiennice, Mariacki & Towers)
+  waterY = H * 0.73;
+  for (const b of buildings) {
+    const by = waterY - b.h;
+
+    if (b.type !== 'tower') {
+      drawSpecialBuilding(b, by, t);
+    } else {
+      ctx.fillStyle = b.color;
+      ctx.fillRect(b.x, by, b.w, b.h);
+
+      if (b.hasSpire) {
+        ctx.beginPath();
+        ctx.moveTo(b.x + b.w / 2 - 5, by);
+        ctx.lineTo(b.x + b.w / 2, by - 34);
+        ctx.lineTo(b.x + b.w / 2 + 5, by);
+        ctx.fill();
+      }
+      if (b.hasAntenna) {
+        ctx.fillStyle = '#224433';
+        ctx.fillRect(b.x + b.w / 2 - 1, by - 22, 2, 22);
+        ctx.fillStyle = Math.sin(t * 3 + b.x) > 0 ? '#ff003c' : '#330010';
+        ctx.fillRect(b.x + b.w / 2 - 2, by - 24, 4, 4);
+      }
+    }
+
+    if (b.accent) {
+      ctx.fillStyle = b.accent;
+      ctx.shadowColor = b.accent;
+      ctx.shadowBlur = 8;
+      ctx.fillRect(b.x, by, b.w, 2);
+      ctx.shadowBlur = 0;
+    }
+
+    if (b.signText) {
+      ctx.font = '7px "Press Start 2P"';
+      ctx.fillStyle = b.signColor;
+      ctx.shadowColor = b.signColor;
+      ctx.shadowBlur = 8;
+      ctx.fillText(b.signText, b.x + 4, by + 24);
+      ctx.shadowBlur = 0;
+    }
+
+    for (const win of b.windows) {
+      if (win.lit) {
+        ctx.fillStyle = win.color;
+        ctx.globalAlpha = 0.55 + Math.sin(t * 2 + win.x) * 0.25;
+        ctx.fillRect(b.x + win.x, by + win.y, 5, 6);
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+
+  // 7. Smok Wawelski & Hovering Cyber-Polonez / Maluch 2077
+  drawSmokWawelski(t);
+  drawVehicles(t);
+
+  // 8. Wisła River with Matrix & Gold Shimmer
+  const riverH = H - waterY;
+  const riverGrad = ctx.createLinearGradient(0, waterY, 0, H);
+  riverGrad.addColorStop(0, '#021208');
+  riverGrad.addColorStop(0.4, '#041c0d');
+  riverGrad.addColorStop(1, '#010804');
+  ctx.fillStyle = riverGrad;
+  ctx.fillRect(0, waterY, W, riverH);
+
+  // Riverbank Neon Horizon Lines
+  ctx.fillStyle = '#00ff66';
+  ctx.shadowColor = '#00ff66';
+  ctx.shadowBlur = 12;
+  ctx.fillRect(0, waterY, W, 2);
+  ctx.shadowBlur = 0;
+
+  ctx.fillStyle = '#ffe600';
+  ctx.shadowColor = '#ffe600';
+  ctx.shadowBlur = 8;
+  ctx.fillRect(0, waterY + 4, W, 1);
+  ctx.shadowBlur = 0;
+
+  // River Ripples
+  for (let y = waterY + 8; y < H; y += 5) {
+    const waveX = Math.cos(y * 0.1 + t * 2.5) * 14;
+    for (let x = 0; x < W; x += 16) {
+      if (Math.random() > 0.52) {
+        ctx.fillStyle = (x + y) % 3 === 0 ? '#ffe600' : '#00ff66';
+        ctx.globalAlpha = 0.14 * (1 - (y - waterY) / riverH);
+        ctx.fillRect(x + waveX, y, 10, 2);
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+
+  // 9. Cyber-Dam & Playable Cyber-Bober
+  drawCyberDam(t);
+  drawCyberBober(t);
+
+  // 10. Spawn & Update Mini-Game Falling Items
+  if (Math.random() > 0.945) spawnFallingItem();
+
+  for (let i = fallingItems.length - 1; i >= 0; i--) {
+    const it = fallingItems[i];
+    it.x += it.vx;
+    it.y += it.vy;
+    it.rot += it.rotSpeed;
+
+    // Draw item
+    ctx.save();
+    ctx.translate(it.x, it.y);
+    ctx.rotate(it.rot);
+
+    if (it.type === 'log') {
+      // Cyber Wood Log (Kłoda)
+      ctx.fillStyle = '#5c3416';
+      ctx.strokeStyle = '#00ff66';
+      ctx.lineWidth = 2;
+      ctx.fillRect(-18, -7, 36, 14);
+      ctx.strokeRect(-18, -7, 36, 14);
+    } else if (it.type === 'gold') {
+      // Golden Cyber-Pieróg / Crown
+      ctx.fillStyle = '#ffe600';
+      ctx.shadowColor = '#ffe600';
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.arc(0, 0, 10, 0, Math.PI, true);
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    } else if (it.type === 'cube') {
+      // Matrix Data Cube
+      ctx.fillStyle = '#00ff66';
+      ctx.shadowColor = '#00ff66';
+      ctx.shadowBlur = 10;
+      ctx.fillRect(-8, -8, 16, 16);
+      ctx.shadowBlur = 0;
+    } else if (it.type === 'mine') {
+      // Crimson Glitch Mine
+      ctx.fillStyle = '#ff003c';
+      ctx.shadowColor = '#ff003c';
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.arc(0, 0, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+    ctx.restore();
+
+    // Check collision with Cyber-Bober
+    const dist = Math.hypot(it.x - bober.x, it.y - bober.y);
+    if (dist < 46) {
+      if (it.type === 'mine') {
+        playAlertHit();
+        combo = 1;
+        createExplosion(it.x, it.y, 28, '#ff003c', false);
+        spawnFloatingText('O CHOLERA! GLITCH!', it.x, it.y - 10, '#ff003c', 1.2);
+        addScore(0);
+      } else {
+        bober.chompTimer = 15;
+        damLogs++;
+        if (damLogs % 5 === 0) damLevel++;
+        combo = Math.min(99, combo + 1);
+
+        if (it.type === 'gold') {
+          playGoldChime();
+          addScore(250);
+          createExplosion(it.x, it.y, 24, '#ffe600', false);
+          spawnFloatingText(`ZŁOTO! +${250 * combo}`, it.x, it.y - 10, '#ffe600', 1.25);
+        } else {
+          playBoberChomp();
+          const base = it.type === 'cube' ? 150 : 100;
+          addScore(base);
+          createExplosion(it.x, it.y, 18, '#00ff66', false);
+          const msg = it.type === 'cube' ? `MATRIX +${base * combo}` : `KŁODA! +${base * combo}`;
+          spawnFloatingText(msg, it.x, it.y - 10, '#00ff66', 1.1);
+        }
+      }
+      fallingItems.splice(i, 1);
+      continue;
+    }
+
+    // Remove if sunk below river
+    if (it.y > H + 20) {
+      if (it.type === 'log') combo = 1;
+      fallingItems.splice(i, 1);
+    }
+  }
+
+  // 11. Visor Lasers
+  for (let i = lasers.length - 1; i >= 0; i--) {
+    const l = lasers[i];
+    ctx.save();
+    ctx.strokeStyle = l.color;
+    ctx.shadowColor = l.color;
+    ctx.shadowBlur = 14;
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = l.alpha;
+    ctx.beginPath();
+    ctx.moveTo(l.x1, l.y1);
+    ctx.lineTo(l.x2, l.y2);
+    ctx.stroke();
+    ctx.restore();
+    l.alpha -= 0.08;
+    if (l.alpha <= 0) lasers.splice(i, 1);
+  }
+
+  // 12. Shockwaves
+  for (let i = shockwaves.length - 1; i >= 0; i--) {
+    const sw = shockwaves[i];
+    ctx.save();
+    ctx.strokeStyle = sw.color;
+    ctx.shadowColor = sw.color;
+    ctx.shadowBlur = 15;
+    ctx.lineWidth = sw.lineWidth;
+    ctx.globalAlpha = sw.alpha;
+    ctx.beginPath();
+    ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    sw.radius += (sw.maxRadius - sw.radius) * 0.12 + 2;
+    sw.alpha -= 0.03;
+    if (sw.alpha <= 0 || sw.radius >= sw.maxRadius) shockwaves.splice(i, 1);
+  }
+
+  // 13. Pixel Particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vx *= p.drag;
+    p.vy = p.vy * p.drag + p.gravity;
+    p.life -= p.decay;
+    if (p.life <= 0 || p.y > H) {
+      particles.splice(i, 1);
+      continue;
+    }
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillRect(Math.floor(p.x), Math.floor(p.y), p.size, p.size);
+    ctx.globalAlpha = 1;
+  }
+
+  // 14. Floating Text Popups
+  for (let i = textParticles.length - 1; i >= 0; i--) {
+    const tp = textParticles[i];
+    tp.x += tp.vx;
+    tp.y += tp.vy;
+    tp.vy *= 0.96;
+    tp.alpha -= 0.016;
+    if (tp.alpha <= 0) {
+      textParticles.splice(i, 1);
+      continue;
+    }
+    ctx.save();
+    ctx.translate(tp.x, tp.y);
+    ctx.rotate(tp.rot);
+    ctx.font = `${Math.floor(11 * tp.scale)}px "Press Start 2P"`;
+    ctx.fillStyle = tp.color;
+    ctx.shadowColor = tp.color;
+    ctx.shadowBlur = 10;
+    ctx.globalAlpha = Math.max(0, tp.alpha);
+    ctx.fillText(tp.text, 0, 0);
+    ctx.restore();
+  }
+
+  // 15. Occasional Matrix Lightning / EMP Flash
+  if (Math.random() > 0.995 || empFlash > 0) {
+    ctx.fillStyle = 'rgba(0, 255, 102, 0.09)';
+    ctx.fillRect(0, 0, W, H);
+    if (empFlash > 0) empFlash--;
+  }
+
+  ctx.restore();
+  requestAnimationFrame(draw);
+}
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  waterY = H * 0.73;
+  bober.x = W * 0.5;
+  bober.targetX = W * 0.5;
+  initStars();
+  initMatrixRain();
+  initSkyline();
+  initHolograms();
+}
+
+window.addEventListener('resize', resize);
+resize();
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>
